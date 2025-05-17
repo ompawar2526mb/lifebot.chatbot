@@ -17,9 +17,3 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
-
-# Project specific
-DATA/embeddings/*
-!DATA/embeddings/.gitkeep
-DATA/raw_pdfs/*
-!DATA/raw_pdfs/.gitkeep 
