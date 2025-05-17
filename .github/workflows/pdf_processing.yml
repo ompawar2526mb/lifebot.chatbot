@@ -39,8 +39,8 @@ jobs:
         
     - name: Commit processed files
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
+        git config --local user.email "kunaldmohare@gmail.com"
+        git config --local user.name "Mohare786-Kunal"
         git add DATA/embeddings/ DATA/pdf_metadata.json
         git commit -m "Update PDF embeddings" || echo "No changes to commit"
         
