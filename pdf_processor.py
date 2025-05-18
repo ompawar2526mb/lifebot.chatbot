@@ -48,41 +48,44 @@ def save_metadata(metadata: dict):
 
 def process_pdf(pdf_path: Path) -> VectorStoreIndex:
     """Process a single PDF file and create its vector store."""
-    # Create embeddings directory
-    embedding_dir = EMBEDDINGS_DIR / pdf_path.stem
-    if embedding_dir.exists():
-        shutil.rmtree(embedding_dir)
-    embedding_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Load and process the PDF
-    documents = SimpleDirectoryReader(
-        input_files=[str(pdf_path)],
-        recursive=True,
-        filename_as_id=True
-    ).load_data()
-    
-    # Configure node parser for better text chunking
-    node_parser = SentenceSplitter(
-        chunk_size=1024,
-        chunk_overlap=200,
-        separator="\n"
-    )
-    
-    # Configure settings
-    Settings.embed_model = OpenAIEmbedding()
-    Settings.node_parser = node_parser
-    
-    # Create index
-    index = VectorStoreIndex.from_documents(
-        documents,
-        show_progress=True,
-        service_context=Settings.get_service_context()
-    )
-    
-    # Save embeddings
-    index.storage_context.persist(str(embedding_dir))
-    
-    return index
+    try:
+        # Create embeddings directory
+        embedding_dir = EMBEDDINGS_DIR / pdf_path.stem
+        if embedding_dir.exists():
+            shutil.rmtree(embedding_dir)
+        embedding_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Load and process the PDF
+        documents = SimpleDirectoryReader(
+            input_files=[str(pdf_path)],
+            recursive=True,
+            filename_as_id=True
+        ).load_data()
+        
+        # Configure node parser for better text chunking
+        node_parser = SentenceSplitter(
+            chunk_size=1024,
+            chunk_overlap=200,
+            separator="\n"
+        )
+        
+        # Configure global settings
+        Settings.embed_model = OpenAIEmbedding()
+        Settings.node_parser = node_parser
+        
+        # Create index
+        index = VectorStoreIndex.from_documents(
+            documents,
+            show_progress=True
+        )
+        
+        # Save embeddings
+        index.storage_context.persist(str(embedding_dir))
+        
+        return index
+    except Exception as e:
+        print(f"Error in process_pdf for {pdf_path.name}: {str(e)}")
+        raise
 
 def process_new_pdfs() -> List[str]:
     """Process any new PDFs in the raw_pdfs directory."""
@@ -197,5 +200,6 @@ def query_pdf(query: str, pdf_name: Optional[str] = None) -> str:
         print(f"Error querying PDF: {str(e)}")
         return f"Error querying PDF: {str(e)}"
 
-# Initialize processing of any new PDFs
-process_new_pdfs() 
+if __name__ == "__main__":
+    # Only run process_new_pdfs() when the script is run directly
+    process_new_pdfs() 

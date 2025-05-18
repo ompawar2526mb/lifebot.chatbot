@@ -8,5 +8,10 @@
     "hash": "d29deedb46793bef98f6bcad431696c2",
     "processed_date": "1747580797.6199195",
     "embedding_dir": "DATA/embeddings/KunalMohare"
+  },
+  "Merge.pdf": {
+    "hash": "f82fdce01cd0804d68012ccf109a0eb6",
+    "processed_date": "1747582251.2303662",
+    "embedding_dir": "DATA/embeddings/Merge"
   }
 }

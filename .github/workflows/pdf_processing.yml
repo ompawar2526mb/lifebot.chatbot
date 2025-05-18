@@ -65,7 +65,8 @@ jobs:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       run: |
         echo "Starting PDF processing..."
-        python -c "from pdf_processor import process_new_pdfs; process_new_pdfs()"
+        # Run the PDF processor script directly
+        python pdf_processor.py
         
     - name: Commit processed files
       if: steps.check_changes.outputs.process_all == 'true' && github.event_name != 'pull_request'
