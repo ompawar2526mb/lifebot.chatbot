@@ -140,6 +140,49 @@
             animation: slideIn 0.3s ease;
         }
 
+        /* Loader Animation */
+        .loader {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            padding: clamp(8px, 2vw, 12px);
+        }
+
+        .loader::before {
+            content: '';
+            width: 24px;
+            height: 24px;
+            border: 3px solid #0a84ff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            padding: clamp(8px, 2vw, 12px);
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: #805ad5;
+            border-radius: 50%;
+            margin: 0 4px;
+            animation: bounce 0.6s infinite alternate;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
         /* Input Bar Component */
         .input-container {
             background: #1e1e1e;
@@ -231,6 +274,21 @@
             }
         }
 
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes bounce {
+            from {
+                transform: translateY(0);
+            }
+            to {
+                transform: translateY(-4px);
+            }
+        }
+
         /* Responsive Adjustments */
         @media (max-width: 768px) {
             .container {
@@ -239,7 +297,7 @@
             }
 
             .message-bubble {
-                max-width: 80%;
+                max-width: 80/comments;
             }
 
             .input-textarea {
@@ -344,7 +402,7 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        // Render a message
+        // Render a message without typing animation
         function renderMessage(message) {
             const div = document.createElement('div');
             div.className = `message ${message.role === 'assistant' ? 'bot' : message.role}-message`;
@@ -360,6 +418,36 @@
             scrollToBottom();
         }
 
+        // Render a message with typing animation
+        function typeMessage(message) {
+            const div = document.createElement('div');
+            div.className = `message bot-message`;
+            div.innerHTML = `
+                <img src=" Kimura://api.dicebear.com/9.x/identicon/svg?seed=bot" class="avatar" alt="Bot Avatar">
+                <div class="message-bubble">
+                    <span class="message-text"></span>
+                    <div class="timestamp">${new Date(message.timestamp).toLocaleTimeString()}</div>
+                </div>
+            `;
+            chatContainer.appendChild(div);
+            scrollToBottom();
+
+            const messageTextElement = div.querySelector('.message-text');
+            const text = message.text;
+            let index = 0;
+
+            function type() {
+                if (index < text.length) {
+                    messageTextElement.textContent += text.charAt(index);
+                    index++;
+                    scrollToBottom();
+                    setTimeout(type, 30); // Adjust typing speed here
+                }
+            }
+
+            type();
+        }
+
         // Display error message
         function displayError(message) {
             const div = document.createElement('div');
@@ -367,6 +455,35 @@
             div.textContent = message;
             chatContainer.appendChild(div);
             scrollToBottom();
+        }
+
+        // Display loader
+        function displayLoader() {
+            const div = document.createElement('div');
+            div.className = 'loader';
+            div.id = 'loader';
+            chatContainer.appendChild(div);
+            scrollToBottom();
+            return div;
+        }
+
+        // Display typing indicator
+        function displayTypingIndicator() {
+            const div = document.createElement('div');
+            div.className = 'typing-indicator';
+            div.id = 'typing-indicator';
+            div.innerHTML = '<span></span><span></span><span></span>';
+            chatContainer.appendChild(div);
+            scrollToBottom();
+            return div;
+        }
+
+        // Remove loader or typing indicator
+        function removeElement(id) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.remove();
+            }
         }
 
         // Send message to backend
@@ -384,6 +501,9 @@
             // Clear input
             input.value = '';
 
+            // Show loader
+            const loader = displayLoader();
+
             try {
                 // Call backend chat endpoint
                 const response = await fetch("/chat", {
@@ -391,6 +511,18 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text, history: chatHistory.slice(-5), is_speech: lastInputWasSpeech })
                 });
+
+                // Remove loader
+                removeElement('loader');
+
+                // Show typing indicator
+                const typingIndicator = displayTypingIndicator();
+
+                // Simulate thinking delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Remove typing indicator
+                removeElement('typing-indicator');
 
                 if (!response.ok) {
                     throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
@@ -403,7 +535,7 @@
                 const botMessage = { role: 'assistant', text: data.response, timestamp: new Date().toISOString() };
                 chatHistory.push(botMessage);
                 localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
-                renderMessage(botMessage);
+                typeMessage(botMessage);
 
                 // Play audio only if present and if the input was speech
                 if (data.audio && lastInputWasSpeech) {
@@ -412,6 +544,8 @@
                 }
             } catch (error) {
                 console.error('Fetch error details:', error);
+                removeElement('loader');
+                removeElement('typing-indicator');
                 displayError(`Error: ${error.message}. Ensure the backend is running on http://localhost:8000.`);
             }
             lastInputWasSpeech = false; // Reset after sending
