@@ -33,6 +33,11 @@ jobs:
         mkdir -p DATA/raw_pdfs
         mkdir -p DATA/embeddings
         
+    - name: List PDF files
+      run: |
+        echo "Available PDF files:"
+        ls -la DATA/raw_pdfs/
+        
     - name: Check for PDF changes
       id: check_changes
       run: |
@@ -67,6 +72,14 @@ jobs:
         echo "Starting PDF processing..."
         # Run the PDF processor script directly
         python pdf_processor.py
+        
+        # Verify embeddings were created
+        echo "Checking created embeddings:"
+        ls -la DATA/embeddings/
+        
+        # Check metadata file
+        echo "Checking metadata file:"
+        cat DATA/pdf_metadata.json
         
     - name: Commit processed files
       if: steps.check_changes.outputs.process_all == 'true' && github.event_name != 'pull_request'
