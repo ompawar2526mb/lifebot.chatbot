@@ -15,6 +15,8 @@ jobs:
     
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Fetch all history for better change detection
     
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -31,21 +33,48 @@ jobs:
         mkdir -p DATA/raw_pdfs
         mkdir -p DATA/embeddings
         
+    - name: Check for PDF changes
+      id: check_changes
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "Manual trigger - processing all PDFs"
+          echo "process_all=true" >> $GITHUB_OUTPUT
+        else
+          # Get list of changed files
+          git diff --name-only ${{ github.event.before }} ${{ github.event.after }} > changed_files.txt
+          if grep -q "DATA/raw_pdfs/.*\.pdf$" changed_files.txt; then
+            echo "PDF changes detected - processing changed PDFs"
+            echo "process_all=false" >> $GITHUB_OUTPUT
+          else
+            echo "No PDF changes detected - skipping processing"
+            echo "process_all=false" >> $GITHUB_OUTPUT
+          fi
+        fi
+        
     - name: Process PDFs
+      if: steps.check_changes.outputs.process_all == 'true'
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       run: |
+        echo "Starting PDF processing..."
         python -c "from pdf_processor import process_new_pdfs; process_new_pdfs()"
         
     - name: Commit processed files
+      if: steps.check_changes.outputs.process_all == 'true'
       run: |
         git config --local user.email "kunaldmohare@gmail.com"
         git config --local user.name "Mohare786-Kunal"
         git add DATA/embeddings/ DATA/pdf_metadata.json
-        git commit -m "Update PDF embeddings" || echo "No changes to commit"
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Update PDF embeddings [skip ci]"
+        fi
         
     - name: Push changes
+      if: steps.check_changes.outputs.process_all == 'true'
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ secrets.GH_TOKEN }}
-        branch: ${{ github.ref }} 
+        branch: ${{ github.ref }}
+        force: false 

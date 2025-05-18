@@ -88,6 +88,7 @@ def process_new_pdfs() -> List[str]:
     """Process any new PDFs in the raw_pdfs directory."""
     metadata = load_metadata()
     processed_files = []
+    errors = []
     
     # Create directories if they don't exist
     RAW_PDFS_DIR.mkdir(parents=True, exist_ok=True)
@@ -95,25 +96,40 @@ def process_new_pdfs() -> List[str]:
     
     # Process each PDF
     for pdf_path in RAW_PDFS_DIR.glob("*.pdf"):
-        pdf_hash = get_pdf_hash(pdf_path)
-        
-        # Skip if PDF hasn't changed
-        if pdf_path.name in metadata and metadata[pdf_path.name]['hash'] == pdf_hash:
-            continue
-        
-        # Process PDF
-        process_pdf(pdf_path)
-        
-        # Update metadata
-        metadata[pdf_path.name] = {
-            'hash': pdf_hash,
-            'processed_date': str(pdf_path.stat().st_mtime),
-            'embedding_dir': str(EMBEDDINGS_DIR / pdf_path.stem)
-        }
-        processed_files.append(pdf_path.name)
+        try:
+            pdf_hash = get_pdf_hash(pdf_path)
+            
+            # Skip if PDF hasn't changed
+            if pdf_path.name in metadata and metadata[pdf_path.name]['hash'] == pdf_hash:
+                print(f"Skipping {pdf_path.name} - no changes detected")
+                continue
+            
+            print(f"Processing {pdf_path.name}...")
+            # Process PDF
+            process_pdf(pdf_path)
+            
+            # Update metadata
+            metadata[pdf_path.name] = {
+                'hash': pdf_hash,
+                'processed_date': str(pdf_path.stat().st_mtime),
+                'embedding_dir': str(EMBEDDINGS_DIR / pdf_path.stem)
+            }
+            processed_files.append(pdf_path.name)
+            print(f"Successfully processed {pdf_path.name}")
+            
+        except Exception as e:
+            error_msg = f"Error processing {pdf_path.name}: {str(e)}"
+            print(error_msg)
+            errors.append(error_msg)
     
     if processed_files:
         save_metadata(metadata)
+        print(f"Successfully processed {len(processed_files)} PDFs: {', '.join(processed_files)}")
+    
+    if errors:
+        print("\nErrors encountered:")
+        for error in errors:
+            print(f"- {error}")
     
     return processed_files
 
