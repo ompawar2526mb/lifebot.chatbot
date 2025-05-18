@@ -72,16 +72,18 @@ def process_pdf(pdf_path: Path) -> VectorStoreIndex:
     Settings.embed_model = OpenAIEmbedding()
     Settings.node_parser = node_parser
     
-    # Create index - Fixed: use Settings directly instead of get_service_context()
+    # Create index
     index = VectorStoreIndex.from_documents(
         documents,
-        show_progress=True
+        show_progress=True,
+        service_context=Settings.get_service_context()
     )
     
     # Save embeddings
     index.storage_context.persist(str(embedding_dir))
     
     return index
+
 def process_new_pdfs() -> List[str]:
     """Process any new PDFs in the raw_pdfs directory."""
     metadata = load_metadata()
@@ -141,30 +143,11 @@ def get_vector_store(pdf_name: Optional[str] = None) -> VectorStoreIndex:
     
     return indices[0] if len(indices) == 1 else indices
 
-# ... existing code ...
-
-# ... existing code ...
-
-# ... existing code ...
-
 def query_pdf(query: str, pdf_name: Optional[str] = None) -> str:
     """Query the PDF(s) using the vector store with enhanced retrieval."""
     try:
-        # Add debugging to check available PDFs
-        metadata = load_metadata()
-        available_pdfs = list(metadata.keys())
-        print(f"Available PDFs in metadata: {available_pdfs}")
-        
         # Get the vector store
-        index_or_indices = get_vector_store(pdf_name)
-        
-        # Handle the case when multiple indices are returned
-        if isinstance(index_or_indices, list):
-            # Use the first index for simplicity or implement a more complex solution
-            print(f"Multiple indices found. Using the first one from: {pdf_name if pdf_name else 'all PDFs'}")
-            index = index_or_indices[0]
-        else:
-            index = index_or_indices
+        index = get_vector_store(pdf_name)
         
         # Configure retriever
         retriever = VectorIndexRetriever(
@@ -173,10 +156,21 @@ def query_pdf(query: str, pdf_name: Optional[str] = None) -> str:
             vector_store_query_mode=VectorStoreQueryMode.DEFAULT  # Use default query mode
         )
         
-        # Rest of the function remains the same...
+        # Configure response synthesizer
+        response_synthesizer = get_response_synthesizer(
+            response_mode="tree_summarize",
+            structured_answer_filtering=True
+        )
         
-        # Rest of the function remains the same...        
-        # ... rest of the function remains the same ...        
+        # Create query engine
+        query_engine = RetrieverQueryEngine(
+            retriever=retriever,
+            response_synthesizer=response_synthesizer
+        )
+        
+        # Execute query
+        response = query_engine.query(query)
+        
         # Format response with sources
         if hasattr(response, 'source_nodes'):
             sources = [node.node.text for node in response.source_nodes]
@@ -188,4 +182,4 @@ def query_pdf(query: str, pdf_name: Optional[str] = None) -> str:
         return f"Error querying PDF: {str(e)}"
 
 # Initialize processing of any new PDFs
-process_new_pdfs()
+process_new_pdfs() 
