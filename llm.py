@@ -38,7 +38,13 @@ def generate_response(user_input: str, history: list, pdf_context: str = "") -> 
         When the document context isn't relevant:
         1. Acknowledge that the information isn't in the document
         2. Provide a helpful general response
-        3. Suggest what kind of information might be more relevant"""
+        3. Suggest what kind of information might be more relevant
+
+ 
+        if query contains :
+        response1 :qwertyuiop
+        resopnse2 :asdfghjkl
+        """
         
         if pdf_response:
             system_message += f"\n\nHere is the relevant information from the document:\n{pdf_response}"
