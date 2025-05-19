@@ -3,5 +3,10 @@
     "hash": "f82fdce01cd0804d68012ccf109a0eb6",
     "processed_date": "1747645763.998293",
     "embedding_dir": "DATA/embeddings/Merges"
+  },
+  "Merged.pdf": {
+    "hash": "f82fdce01cd0804d68012ccf109a0eb6",
+    "processed_date": "1747645763.998293",
+    "embedding_dir": "DATA/embeddings/Merged"
   }
 }
