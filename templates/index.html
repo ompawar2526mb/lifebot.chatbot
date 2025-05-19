@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chatbot with Voice</title>
+    <title>AI Chatbot with Voice and Dual Responses</title>
     <style>
         * {
             margin: 0;
@@ -65,6 +65,63 @@
             color: #e5e7eb;
         }
 
+        .toggle-container {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-label {
+            font-size: clamp(12px, 2vw, 14px);
+            color: #e5e7eb;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #4a5568;
+            transition: 0.3s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: #e5e7eb;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #0a84ff;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
         /* Chat Area Component */
         .chat-container {
             flex: 1;
@@ -96,6 +153,57 @@
 
         .bot-message {
             justify-content: flex-start;
+        }
+
+        .dual-response-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #1e1e1e;
+            padding: 12px;
+            border-radius: 12px;
+            margin: 8px 0;
+        }
+
+        .dual-response-header {
+            text-align: center;
+            font-size: clamp(14px, 2.2vw, 16px);
+            color: #e5e7eb;
+            margin-bottom: 8px;
+        }
+
+        .dual-response-wrapper {
+            display: flex;
+            flex-direction: row;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .dual-response {
+            flex: 1;
+            background: #805ad5;
+            color: #e5e7eb;
+            padding: clamp(8px, 2vw, 12px);
+            border-radius: 8px;
+            position: relative;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 150px;
+        }
+
+        .dual-response .message-text {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-bottom: 8px;
+        }
+
+        .dual-response .prefer-button {
+            margin-top: auto;
+        }
+
+        .dual-response.selected {
+            border: 2px solid #0a84ff;
         }
 
         .message-bubble {
@@ -181,6 +289,27 @@
 
         .typing-indicator span:nth-child(3) {
             animation-delay: 0.4s;
+        }
+
+        .prefer-button {
+            background: #0a84ff;
+            color: #fff;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: clamp(12px, 2vw, 14px);
+            transition: all 0.2s ease;
+        }
+
+        .prefer-button:hover {
+            background: #805ad5;
+            transform: scale(1.05);
+        }
+
+        .prefer-button:disabled {
+            background: #4a5568;
+            cursor: not-allowed;
         }
 
         /* Input Bar Component */
@@ -296,8 +425,12 @@
                 border-radius: 8px;
             }
 
-            .message-bubble {
-                max-width: 80/comments;
+            .message-bubble, .dual-response {
+                max-width: 80%;
+            }
+
+            .dual-response-wrapper {
+                flex-direction: column;
             }
 
             .input-textarea {
@@ -314,7 +447,7 @@
                 font-size: 16px;
             }
 
-            .message-bubble {
+            .message-bubble, .dual-response {
                 max-width: 85%;
                 font-size: 13px;
             }
@@ -339,7 +472,7 @@
                 font-size: 22px;
             }
 
-            .message-bubble {
+            .message-bubble, .dual-response {
                 font-size: 16px;
             }
 
@@ -354,7 +487,14 @@
         <!-- Header Component -->
         <div class="header">
             <div class="avatar">AI</div>
-            <h1>AI Chatbot with Voice</h1>
+            <h1>AI Chatbot with Voice and Dual Responses</h1>
+            <div class="toggle-container">
+                <span class="toggle-label">Dual Response</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="dual-response-toggle" onchange="toggleDualResponse()">
+                    <span class="slider"></span>
+                </label>
+            </div>
         </div>
 
         <!-- Chat Area Component -->
@@ -376,6 +516,14 @@
     </div>
 
     <script>
+        // Simple UUID generator for dual response IDs
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
         // Initialize Web Speech API
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -389,6 +537,16 @@
         }
         let isRecognizing = false;
         let lastInputWasSpeech = false;
+
+        // Load dual response toggle state from local storage
+        let dualResponseEnabled = JSON.parse(localStorage.getItem('dualResponseEnabled')) || false;
+        document.getElementById('dual-response-toggle').checked = dualResponseEnabled;
+
+        // Toggle dual response mode
+        function toggleDualResponse() {
+            dualResponseEnabled = document.getElementById('dual-response-toggle').checked;
+            localStorage.setItem('dualResponseEnabled', JSON.stringify(dualResponseEnabled));
+        }
 
         // Load chat history from local storage
         const chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
@@ -404,26 +562,47 @@
 
         // Render a message without typing animation
         function renderMessage(message) {
+            if (message.type === 'dual') {
+                renderDualResponse(message);
+            } else {
+                const div = document.createElement('div');
+                div.className = `message ${message.role === 'assistant' ? 'bot' : message.role}-message`;
+                div.innerHTML = `
+                    ${message.role === 'assistant' ? '<img src="https://api.dicebear.com/9.x/identicon/svg?seed=bot" class="avatar" alt="Bot Avatar">' : ''}
+                    <div class="message-bubble">
+                        ${message.text}
+                        <div class="timestamp">${new Date(message.timestamp).toLocaleTimeString()}</div>
+                    </div>
+                    ${message.role === 'user' ? '<img src="https://api.dicebear.com/9.x/identicon/svg?seed=user" class="avatar" alt="User Avatar">' : ''}
+                `;
+                chatContainer.appendChild(div);
+                scrollToBottom();
+            }
+        }
+
+        // Render a dual response with selection option
+        function renderDualResponse(message) {
             const div = document.createElement('div');
-            div.className = `message ${message.role === 'assistant' ? 'bot' : message.role}-message`;
+            div.className = 'dual-response-container';
+            div.id = `dual-${message.id}`;
+            const selectedResponse = message.responses.find(r => r.selected) || message.responses[0];
             div.innerHTML = `
-                ${message.role === 'assistant' ? '<img src="https://api.dicebear.com/9.x/identicon/svg?seed=bot" class="avatar" alt="Bot Avatar">' : ''}
+                <img src="https://api.dicebear.com/9.x/identicon/svg?seed=bot" class="avatar" alt="Bot Avatar">
                 <div class="message-bubble">
-                    ${message.text}
+                    ${selectedResponse.text}
                     <div class="timestamp">${new Date(message.timestamp).toLocaleTimeString()}</div>
                 </div>
-                ${message.role === 'user' ? '<img src="https://api.dicebear.com/9.x/identicon/svg?seed=user" class="avatar" alt="User Avatar">' : ''}
             `;
             chatContainer.appendChild(div);
             scrollToBottom();
         }
 
         // Render a message with typing animation
-        function typeMessage(message) {
+        function typeMessage(message, callback) {
             const div = document.createElement('div');
             div.className = `message bot-message`;
             div.innerHTML = `
-                <img src=" Kimura://api.dicebear.com/9.x/identicon/svg?seed=bot" class="avatar" alt="Bot Avatar">
+                <img src="https://api.dicebear.com/9.x/identicon/svg?seed=bot" class="avatar" alt="Bot Avatar">
                 <div class="message-bubble">
                     <span class="message-text"></span>
                     <div class="timestamp">${new Date(message.timestamp).toLocaleTimeString()}</div>
@@ -442,10 +621,102 @@
                     index++;
                     scrollToBottom();
                     setTimeout(type, 30); // Adjust typing speed here
+                } else if (callback) {
+                    callback();
                 }
             }
 
             type();
+        }
+
+        // Stream dual responses with typing animation
+        function streamDualResponses(responses, messageId, isSpeech, callback) {
+            const div = document.createElement('div');
+            div.className = 'dual-response-container';
+            div.id = `dual-${messageId}`;
+            div.innerHTML = `
+                <div class="dual-response-header">Which response do you prefer?</div>
+                <div class="dual-response-wrapper">
+                    ${responses.map((response, index) => `
+                        <div class="dual-response" id="response-${messageId}-${index}">
+                            <span class="message-text"></span>
+                            <button class="prefer-button" onclick="selectResponse('${messageId}', ${index}, ${isSpeech}, ${callback ? '() => callback()' : 'null'})">Prefer this response</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            chatContainer.appendChild(div);
+            scrollToBottom();
+
+            let completedResponses = 0;
+            const totalResponses = responses.length;
+
+            responses.forEach((response, index) => {
+                const messageTextElement = document.querySelector(`#response-${messageId}-${index} .message-text`);
+                let textIndex = 0;
+                const text = response;
+
+                function type() {
+                    if (textIndex < text.length) {
+                        messageTextElement.textContent += text.charAt(textIndex);
+                        textIndex++;
+                        scrollToBottom();
+                        setTimeout(type, 7);
+                    } else {
+                        completedResponses++;
+                        if (completedResponses === totalResponses && callback) {
+                            // Callback will be triggered via button click
+                        }
+                    }
+                }
+                type();
+            });
+        }
+
+        // Handle dual response selection
+        async function selectResponse(messageId, selectedIndex, isSpeech, callback) {
+            const container = document.getElementById(`dual-${messageId}`);
+            const message = chatHistory.find(msg => msg.id === messageId);
+            const responses = message.responses;
+            responses.forEach((r, i) => r.selected = i === selectedIndex);
+
+            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+
+            container.className = 'message bot-message';
+            container.innerHTML = `
+                <img src="https://api.dicebear.com/9.x/identicon/svg?seed=bot" class="avatar" alt="Bot Avatar">
+                <div class="message-bubble">
+                    ${responses[selectedIndex].text}
+                    <div class="timestamp">${new Date(message.timestamp).toLocaleTimeString()}</div>
+                </div>
+            `;
+            scrollToBottom();
+
+            // Generate and play audio if the input was speech
+            if (isSpeech) {
+                try {
+                    const response = await fetch("/generate_audio", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: responses[selectedIndex].text })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+                    if (data.audio) {
+                        const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
+                        audio.play().catch(e => displayError('Audio playback failed: ' + e.message));
+                    }
+                } catch (error) {
+                    console.error('Audio fetch error:', error);
+                    displayError(`Error generating audio: ${error.message}`);
+                }
+            }
+
+            if (callback) callback();
         }
 
         // Display error message
@@ -493,7 +764,7 @@
             if (!text) return;
 
             // Add user message to history
-            const userMessage = { role: 'user', text, timestamp: new Date().toISOString() };
+            const userMessage = { role: 'user', text, timestamp: new Date().toISOString(), isSpeech: lastInputWasSpeech };
             chatHistory.push(userMessage);
             localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
             renderMessage(userMessage);
@@ -509,7 +780,12 @@
                 const response = await fetch("/chat", {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, history: chatHistory.slice(-5), is_speech: lastInputWasSpeech })
+                    body: JSON.stringify({ 
+                        text, 
+                        history: chatHistory.slice(-5), 
+                        is_speech: lastInputWasSpeech,
+                        dual_response: dualResponseEnabled
+                    })
                 });
 
                 // Remove loader
@@ -531,16 +807,37 @@
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
 
-                // Add bot message to history
-                const botMessage = { role: 'assistant', text: data.response, timestamp: new Date().toISOString() };
-                chatHistory.push(botMessage);
-                localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
-                typeMessage(botMessage);
+                if (dualResponseEnabled && data.responses.length > 1) {
+                    // Handle dual responses
+                    const messageId = generateUUID();
+                    const botMessage = {
+                        role: 'assistant',
+                        type: 'dual',
+                        id: messageId,
+                        responses: data.responses.map(text => ({ text, selected: false })),
+                        timestamp: new Date().toISOString(),
+                        isSpeech: lastInputWasSpeech
+                    };
+                    chatHistory.push(botMessage);
+                    localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+                    streamDualResponses(data.responses, messageId, lastInputWasSpeech);
+                } else {
+                    // Handle single response
+                    const botMessage = { 
+                        role: 'assistant', 
+                        text: data.responses[0], 
+                        timestamp: new Date().toISOString(),
+                        isSpeech: lastInputWasSpeech
+                    };
+                    chatHistory.push(botMessage);
+                    localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+                    typeMessage(botMessage);
 
-                // Play audio only if present and if the input was speech
-                if (data.audio && lastInputWasSpeech) {
-                    const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
-                    audio.play().catch(e => displayError('Audio playback failed: ' + e.message));
+                    // Play audio only if present and if the input was speech
+                    if (data.audio && lastInputWasSpeech) {
+                        const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
+                        audio.play().catch(e => displayError('Audio playback failed: ' + e.message));
+                    }
                 }
             } catch (error) {
                 console.error('Fetch error details:', error);
