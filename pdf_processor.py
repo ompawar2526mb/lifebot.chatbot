@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict
 from llama_index.core import (
     VectorStoreIndex,
     SimpleDirectoryReader,
@@ -19,6 +19,8 @@ from dotenv import load_dotenv
 import hashlib
 import json
 import shutil
+from functools import lru_cache
+import time
 
 # Load environment variables
 load_dotenv()
@@ -28,6 +30,10 @@ DATA_DIR = Path("DATA")
 RAW_PDFS_DIR = DATA_DIR / "raw_pdfs"
 EMBEDDINGS_DIR = DATA_DIR / "embeddings"
 METADATA_FILE = DATA_DIR / "pdf_metadata.json"
+
+# Add cache configuration
+CACHE_SIZE = 100  # Number of queries to cache
+QUERY_CACHE_FILE = DATA_DIR / "query_cache.json"
 
 def get_pdf_hash(pdf_path: Path) -> str:
     """Generate a hash for the PDF file to track changes."""
@@ -162,22 +168,55 @@ def get_vector_store(pdf_name: Optional[str] = None) -> VectorStoreIndex:
     
     return indices[0] if len(indices) == 1 else indices
 
+def load_query_cache() -> Dict:
+    """Load query cache from file."""
+    if QUERY_CACHE_FILE.exists():
+        with open(QUERY_CACHE_FILE, 'r') as f:
+            return json.load(f)
+    return {}
+
+def save_query_cache(cache: Dict):
+    """Save query cache to file."""
+    with open(QUERY_CACHE_FILE, 'w') as f:
+        json.dump(cache, f, indent=2)
+
+@lru_cache(maxsize=CACHE_SIZE)
+def get_cached_query(query: str, pdf_name: Optional[str] = None) -> Optional[str]:
+    """Get cached query result if available."""
+    cache = load_query_cache()
+    cache_key = f"{pdf_name}:{query}" if pdf_name else query
+    return cache.get(cache_key)
+
+def cache_query_result(query: str, result: str, pdf_name: Optional[str] = None):
+    """Cache query result."""
+    cache = load_query_cache()
+    cache_key = f"{pdf_name}:{query}" if pdf_name else query
+    cache[cache_key] = result
+    save_query_cache(cache)
+
 def query_pdf(query: str, pdf_name: Optional[str] = None) -> str:
-    """Query the PDF(s) using the vector store with enhanced retrieval."""
+    """Query the PDF(s) using the vector store with enhanced retrieval and caching."""
     try:
+        # Check cache first
+        cached_result = get_cached_query(query, pdf_name)
+        if cached_result:
+            return f"[Cached Result] {cached_result}"
+
+        start_time = time.time()
+        
         # Get the vector store
         index = get_vector_store(pdf_name)
         
-        # Configure retriever
+        # Configure retriever with optimized settings
         retriever = VectorIndexRetriever(
             index=index,
-            similarity_top_k=5,  # Retrieve top 5 most relevant chunks
-            vector_store_query_mode=VectorStoreQueryMode.DEFAULT  # Use default query mode
+            similarity_top_k=3,  # Reduced from 5 to 3 for faster retrieval
+            vector_store_query_mode=VectorStoreQueryMode.DEFAULT
         )
         
-        # Configure response synthesizer
+        # Configure response synthesizer with optimized settings
         response_synthesizer = get_response_synthesizer(
-            response_mode="tree_summarize",
+            response_mode="compact",  # Changed from tree_summarize to compact for faster responses
             structured_answer_filtering=True
         )
         
@@ -193,8 +232,17 @@ def query_pdf(query: str, pdf_name: Optional[str] = None) -> str:
         # Format response with sources
         if hasattr(response, 'source_nodes'):
             sources = [node.node.text for node in response.source_nodes]
-            return f"Based on the document:\n\n{response.response}\n\nSources:\n" + "\n".join(f"- {source}" for source in sources)
-        return str(response.response)
+            result = f"Based on the document:\n\n{response.response}\n\nSources:\n" + "\n".join(f"- {source}" for source in sources)
+        else:
+            result = str(response.response)
+        
+        # Cache the result
+        cache_query_result(query, result, pdf_name)
+        
+        end_time = time.time()
+        print(f"Query completed in {end_time - start_time:.2f} seconds")
+        
+        return result
         
     except Exception as e:
         print(f"Error querying PDF: {str(e)}")
