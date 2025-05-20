@@ -1,20 +1,23 @@
 from fastapi import FastAPI, Request, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse, HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 from llm import LLMHandler
 from pdf_processor import PDFProcessor
 from rag import RAGSystem
 from fastapi.templating import Jinja2Templates
 import os
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from pathlib import Path
 import logging
 import uvicorn
 import json
 import base64
 from tts import text_to_speech  # Import the TTS function
+from elevenlabs import ElevenLabs, VoiceSettings
+from io import BytesIO
+import asyncio
 
 # Set up logging with more detailed format
 logging.basicConfig(
@@ -28,6 +31,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="RAG API", description="RAG System API for PDF Processing and Querying")
+
+# Load API keys from environment
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+if not ELEVENLABS_API_KEY:
+    logger.error("ELEVENLABS_API_KEY not set in environment variables")
+    raise RuntimeError("ELEVENLABS_API_KEY not set")
+
+# Initialize ElevenLabs client
+elevenlabs_client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
 
 # Create necessary directories
 DATA_DIR = Path("DATA")
@@ -98,6 +110,28 @@ class ChatResponse(BaseModel):
     responses: List[str]
     audio: Optional[str] = None
 
+# Streaming audio generator
+async def stream_audio(text: str):
+    try:
+        # Use ElevenLabs streaming API
+        audio_stream = await elevenlabs_client.text_to_speech_stream(
+            text=text,
+            voice="Rachel",  # Replace with your preferred voice ID
+            voice_settings=VoiceSettings(
+                stability=0.5,
+                similarity_boost=0.5,
+                style=0.0,
+                use_speaker_boost=True
+            )
+        )
+
+        # Yield audio chunks as they are received
+        async for chunk in audio_stream:
+            yield chunk
+    except Exception as e:
+        logger.error(f"Error streaming audio from ElevenLabs: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error streaming audio: {str(e)}")
+
 @app.get("/", response_class=HTMLResponse)
 async def get_index(request: Request):
     logger.info("Serving index page")
@@ -106,7 +140,7 @@ async def get_index(request: Request):
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     try:
-        logger.info(f"Received chat request: {request.text}")
+        logger.info(f"Received chat request: {request.text}, dual_response: {request.dual_response}")
         
         # Check if we have any processed documents
         if not rag_system.documents_processed:
@@ -132,11 +166,10 @@ async def chat(request: ChatRequest):
         )
         
         # Generate audio if the request is from speech input
-        if request.is_speech:
-            audio_bytes = text_to_speech(response["responses"][0])
-            if audio_bytes:
-                audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
-                response["audio"] = audio_base64
+        audio_data = None
+        if request.is_speech and not request.dual_response:
+            # For single response, we'll stream the audio separately
+            pass  # Audio will be streamed via /stream_audio endpoint
         
         logger.info("Successfully generated response")
         return response
@@ -147,6 +180,19 @@ async def chat(request: ChatRequest):
             "responses": ["I apologize, but I encountered an error. Please try again."],
             "audio": None
         }
+
+@app.post("/stream_audio")
+async def stream_audio_endpoint(request: ChatRequest):
+    try:
+        # Use the first response for audio (since dual_response should be false here)
+        text = request.text if request.dual_response else request.history[-1].text
+        return StreamingResponse(
+            stream_audio(text),
+            media_type="audio/mpeg"
+        )
+    except Exception as e:
+        logger.error(f"Error in stream_audio endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/upload-pdf")
 async def upload_pdf(file: UploadFile = File(...)):
@@ -169,40 +215,6 @@ async def upload_pdf(file: UploadFile = File(...)):
     except Exception as e:
         logger.error(f"PDF upload error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/generate_audio", response_model=ChatResponse)
-async def generate_audio(request: ChatRequest):
-    try:
-        logger.info(f"Received audio generation request for: {request.text}")
-        # Query the RAG system
-        context = rag_system.query(request.text)
-        if not context:
-            logger.warning("No response generated for audio query")
-            return {
-                "responses": ["No relevant information found in the documents."],
-                "audio": None
-            }
-        
-        # Generate response
-        response = rag_system.generate_response(request.text, context, dual_response=False)
-        
-        # Generate audio
-        audio_bytes = text_to_speech(response["responses"][0])
-        if audio_bytes:
-            audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
-            response["audio"] = audio_base64
-        else:
-            logger.warning("Failed to generate audio")
-            response["audio"] = None
-        
-        logger.info("Successfully generated audio response")
-        return response
-    except Exception as e:
-        logger.error(f"Audio generation error: {str(e)}")
-        return {
-            "responses": ["I apologize, but I encountered an error while generating audio."],
-            "audio": None
-        }
 
 def start():
     """Start the FastAPI server with uvicorn"""

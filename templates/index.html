@@ -28,7 +28,7 @@
         .container {
             width: 100%;
             max-width: 900px;
-            height: clamp(500px, 90vh, 800px);
+            height: 100vh;
             background: #252526;
             border-radius: 16px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
@@ -40,10 +40,10 @@
         /* Header Component */
         .header {
             background: #1e1e1e;
-            padding: clamp(12px, 2.5vw, 16px);
+            padding: clamp(8px, 2vw, 12px);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             border-bottom: 2px solid #F15A29;
             position: sticky;
             top: 0;
@@ -51,14 +51,14 @@
         }
 
         .header .logo {
-            width: clamp(40px, 5vw, 50px);
+            width: clamp(32px, 4vw, 40px);
             height: auto;
-            border-radius: 12px;
+            border-radius: 8px;
             object-fit: cover;
         }
 
         .header h1 {
-            font-size: clamp(16px, 2.5vw, 20px);
+            font-size: clamp(14px, 2vw, 18px);
             font-weight: 600;
             color: #e5e7eb;
             letter-spacing: -0.02em;
@@ -68,11 +68,11 @@
             margin-left: auto;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .toggle-label {
-            font-size: clamp(13px, 2.2vw, 15px);
+            font-size: clamp(12px, 1.8vw, 14px);
             color: #e5e7eb;
             font-weight: 500;
             letter-spacing: -0.01em;
@@ -81,8 +81,8 @@
         .toggle-switch {
             position: relative;
             display: inline-block;
-            width: 40px;
-            height: 20px;
+            width: 36px;
+            height: 18px;
         }
 
         .toggle-switch input {
@@ -100,14 +100,14 @@
             bottom: 0;
             background-color: #4A4A4A;
             transition: 0.3s;
-            border-radius: 20px;
+            border-radius: 18px;
         }
 
         .slider:before {
             position: absolute;
             content: "";
-            height: 16px;
-            width: 16px;
+            height: 14px;
+            width: 14px;
             left: 2px;
             bottom: 2px;
             background-color: #e5e7eb;
@@ -120,21 +120,21 @@
         }
 
         input:checked + .slider:before {
-            transform: translateX(20px);
+            transform: translateX(18px);
         }
 
         /* Chat Area Component */
         .chat-container {
             flex: 1;
             overflow-y: auto;
-            padding: clamp(10px, 2.5vw, 20px);
+            padding: clamp(8px, 2vw, 16px);
             display: flex;
             flex-direction: column;
-            gap: clamp(8px, 2vw, 12px);
+            gap: clamp(6px, 1.5vw, 10px);
         }
 
         .chat-container::-webkit-scrollbar {
-            width: 6px;
+            width: 5px;
         }
 
         .chat-container::-webkit-scrollbar-thumb {
@@ -159,18 +159,18 @@
         .dual-response-container {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
             background: #1e1e1e;
-            padding: 12px;
+            padding: 10px;
             border-radius: 12px;
-            margin: 8px 0;
+            margin: 6px 0;
         }
 
         .dual-response-header {
             text-align: center;
-            font-size: clamp(15px, 2.4vw, 17px);
+            font-size: clamp(13px, 2vw, 15px);
             color: #e5e7eb;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             font-weight: 600;
             letter-spacing: -0.02em;
         }
@@ -178,7 +178,7 @@
         .dual-response-wrapper {
             display: flex;
             flex-direction: row;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
         }
 
@@ -186,20 +186,20 @@
             flex: 1;
             background: #4A4A4A;
             color: #e5e7eb;
-            padding: clamp(12px, 2.4vw, 16px);
-            border-radius: 16px;
+            padding: clamp(10px, 2vw, 14px);
+            border-radius: 12px;
             position: relative;
             min-width: 0;
             display: flex;
             flex-direction: column;
-            min-height: 150px;
+            min-height: 120px;
             letter-spacing: -0.01em;
         }
 
         .dual-response .message-text {
             flex-grow: 1;
             overflow-y: auto;
-            padding-bottom: 8px;
+            padding-bottom: 6px;
         }
 
         .dual-response .prefer-button {
@@ -208,15 +208,15 @@
 
         .dual-response.selected {
             border: 2px solid #F15A29;
-            border-radius: 16px;
+            border-radius: 12px;
         }
 
         .message-bubble {
-            max-width: 75%;
-            padding: clamp(10px, 2.2vw, 14px) clamp(12px, 2.7vw, 18px);
-            border-radius: 16px;
+            max-width: 80%;
+            padding: clamp(8px, 1.8vw, 12px) clamp(10px, 2.2vw, 16px);
+            border-radius: 12px;
             line-height: 1.5;
-            font-size: clamp(14px, 2.2vw, 16px);
+            font-size: clamp(13px, 1.8vw, 15px);
             position: relative;
             letter-spacing: -0.01em;
         }
@@ -234,25 +234,25 @@
         }
 
         .timestamp {
-            font-size: clamp(11px, 1.8vw, 13px);
+            font-size: clamp(10px, 1.5vw, 12px);
             color: #a0aec0;
-            margin-top: 4px;
+            margin-top: 3px;
             letter-spacing: -0.01em;
         }
 
         .avatar {
-            width: clamp(24px, 3.5vw, 28px);
-            height: clamp(24px, 3.5vw, 28px);
+            width: clamp(20px, 3vw, 24px);
+            height: clamp(20px, 3vw, 24px);
             border-radius: 50%;
-            margin: 0 clamp(5px, 1.5vw, 8px);
+            margin: 0 clamp(4px, 1.2vw, 6px);
             object-fit: cover;
         }
 
         .error-message {
             color: #f56565;
-            font-size: clamp(13px, 2.2vw, 15px);
+            font-size: clamp(12px, 1.8vw, 14px);
             text-align: center;
-            padding: 10px;
+            padding: 8px;
             animation: slideIn 0.3s ease;
             font-weight: 500;
             letter-spacing: -0.01em;
@@ -262,13 +262,13 @@
             display: flex;
             justify-content: flex-start;
             align-items: center;
-            padding: clamp(8px, 2vw, 12px);
+            padding: clamp(6px, 1.5vw, 10px);
         }
 
         .loader::before {
             content: '';
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             border: 3px solid #F15A29;
             border-top-color: transparent;
             border-radius: 50%;
@@ -279,15 +279,15 @@
             display: flex;
             justify-content: flex-start;
             align-items: center;
-            padding: clamp(8px, 2vw, 12px);
+            padding: clamp(6px, 1.5vw, 10px);
         }
 
         .typing-indicator span {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             background: #4A4A4A;
             border-radius: 50%;
-            margin: 0 4px;
+            margin: 0 3px;
             animation: bounce 0.6s infinite alternate;
         }
 
@@ -302,14 +302,15 @@
         .prefer-button {
             background: #F15A29;
             color: #fff;
-            padding: 10px 16px;
+            padding: 8px 14px;
             border: none;
-            border-radius: 16px;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: clamp(13px, 2.2vw, 15px);
+            font-size: clamp(12px, 1.8vw, 14px);
             font-weight: 500;
             transition: all 0.2s ease;
             letter-spacing: -0.01em;
+            touch-action: manipulation;
         }
 
         .prefer-button:hover {
@@ -324,29 +325,31 @@
 
         .input-container {
             background: #1e1e1e;
-            padding: clamp(10px, 2vw, 15px);
+            padding: clamp(8px, 1.5vw, 12px);
             border-top: 2px solid #F15A29;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             position: sticky;
             bottom: 0;
             z-index: 10;
+            flex-wrap: wrap;
         }
 
         .input-textarea {
             flex: 1;
             background: #2d2d2d;
             border: 1px solid #F15A29;
-            border-radius: 16px;
-            padding: clamp(10px, 2.2vw, 14px) clamp(12px, 2.7vw, 18px);
+            border-radius: 12px;
+            padding: clamp(8px, 1.8vw, 12px) clamp(10px, 2.2vw, 16px);
             color: #e5e7eb;
-            font-size: clamp(14px, 2.2vw, 16px);
+            font-size: clamp(13px, 1.8vw, 15px);
             resize: none;
-            height: 60px;
+            height: 50px;
             outline: none;
             transition: all 0.2s ease;
             letter-spacing: -0.01em;
+            min-width: 200px;
         }
 
         .input-textarea:focus {
@@ -355,41 +358,45 @@
         }
 
         .input-textarea:hover {
-            transform: scale(1.01);
             border-color: #4A4A4A;
         }
 
-        .send-button, .mic-button {
+        .send-button, .mic-button, .mute-button {
             background: #F15A29;
             color: #fff;
-            padding: clamp(10px, 2.2vw, 14px);
+            padding: clamp(8px, 1.8vw, 12px);
             border: none;
-            border-radius: 16px;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: clamp(14px, 2.2vw, 16px);
+            font-size: clamp(13px, 1.8vw, 15px);
             font-weight: 500;
             transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
             letter-spacing: -0.01em;
+            touch-action: manipulation;
+            min-width: 40px;
         }
 
-        .send-button:hover, .mic-button:hover {
+        .send-button:hover, .mic-button:hover, .mute-button:hover {
             background: #4A4A4A;
-            transform: scale(1.05);
         }
 
         .mic-button.recording {
             background: #f56565;
         }
 
+        .mute-button.muted {
+            background: #4A4A4A;
+        }
+
         .footer {
             background: #1e1e1e;
             text-align: center;
-            padding: clamp(10px, 2.2vw, 14px);
+            padding: clamp(8px, 1.8vw, 12px);
             border-top: 1px solid #3c3c3c;
-            font-size: clamp(13px, 2.2vw, 15px);
+            font-size: clamp(12px, 1.8vw, 14px);
             color: #a0aec0;
             letter-spacing: -0.01em;
         }
@@ -432,20 +439,34 @@
 
         @media (max-width: 768px) {
             .container {
-                height: 100vh;
                 border-radius: 8px;
             }
 
             .message-bubble, .dual-response {
-                max-width: 80%;
+                max-width: 85%;
             }
 
             .dual-response-wrapper {
                 flex-direction: column;
             }
 
+            .input-container {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 6px;
+                padding: 8px;
+            }
+
             .input-textarea {
-                height: 50px;
+                height: 40px;
+                font-size: 14px;
+                padding: 8px 12px;
+            }
+
+            .send-button, .mic-button, .mute-button {
+                padding: 8px;
+                font-size: 14px;
+                min-width: 36px;
             }
         }
 
@@ -454,23 +475,81 @@
                 border-radius: 0;
             }
 
+            .header {
+                padding: 8px;
+            }
+
+            .header .logo {
+                width: 30px;
+            }
+
             .header h1 {
-                font-size: 16px;
+                font-size: 14px;
+            }
+
+            .toggle-label {
+                font-size: 12px;
+            }
+
+            .toggle-switch {
+                width: 32px;
+                height: 16px;
+            }
+
+            .slider:before {
+                height: 12px;
+                width: 12px;
+            }
+
+            input:checked + .slider:before {
+                transform: translateX(16px);
+            }
+
+            .chat-container {
+                padding: 8px;
+                gap: 6px;
             }
 
             .message-bubble, .dual-response {
-                max-width: 85%;
+                max-width: 90%;
                 font-size: 13px;
-            }
-
-            .input-textarea {
-                font-size: 14px;
                 padding: 8px 12px;
             }
 
-            .send-button, .mic-button {
-                padding: 8px;
+            .dual-response {
+                min-height: 100px;
+            }
+
+            .timestamp {
+                font-size: 10px;
+            }
+
+            .avatar {
+                width: 20px;
+                height: 20px;
+                margin: 0 4px;
+            }
+
+            .prefer-button {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+
+            .input-textarea {
                 font-size: 13px;
+                padding: 6px 10px;
+                height: 36px;
+            }
+
+            .send-button, .mic-button, .mute-button {
+                padding: 6px;
+                font-size: 13px;
+                min-width: 32px;
+            }
+
+            .footer {
+                font-size: 12px;
+                padding: 8px;
             }
         }
 
@@ -480,7 +559,7 @@
             }
 
             .header h1 {
-                font-size: 22px;
+                font-size: 20px;
             }
 
             .message-bubble, .dual-response {
@@ -488,29 +567,8 @@
             }
 
             .input-textarea {
-                font-size: 17px;
+                font-size: 16px;
             }
-        }
-
-        .upload-container {
-            margin-left: 16px;
-        }
-
-        .upload-button {
-            background: #F15A29;
-            color: #fff;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-
-        .upload-button:hover {
-            background: #4A4A4A;
-            transform: scale(1.05);
         }
     </style>
 </head>
@@ -518,7 +576,7 @@
     <div class="container">
         <!-- Header Component -->
         <div class="header">
-            <img src="/static/images/logo.png" alt="PG Glass Logo" class="logo" onerror="this.onerror=null; this.src='https://via.placeholder.com/50x50?text=Logo+Error';">
+            <img src="/static/images/logo2.png" alt="PG Glass Logo" class="logo" onerror="this.onerror=null; this.src='https://via.placeholder.com/50x50?text=Logo+Error';">
             <h1>PG Glass Chatbot</h1>
             <div class="toggle-container">
                 <span class="toggle-label">Dual Response</span>
@@ -526,10 +584,6 @@
                     <input type="checkbox" id="dual-response-toggle" onchange="toggleDualResponse()">
                     <span class="slider"></span>
                 </label>
-            </div>
-            <div class="upload-container">
-                <input type="file" id="pdf-upload" accept=".pdf" style="display: none;" onchange="uploadPDF(this.files[0])">
-                <button class="upload-button" onclick="document.getElementById('pdf-upload').click()">Upload PDF</button>
             </div>
         </div>
 
@@ -543,6 +597,7 @@
             <textarea class="input-textarea" id="user-input" placeholder="Type your message..."></textarea>
             <button class="send-button" onclick="enqueueMessage()">Send</button>
             <button class="mic-button" id="mic-button" onclick="toggleSpeechRecognition()">🎤 Speak</button>
+            <button class="mute-button" id="mute-button" onclick="toggleMute()">🔊 Mute</button>
         </div>
 
         <!-- Footer Component -->
@@ -573,6 +628,89 @@
         }
         let isRecognizing = false;
         let lastInputWasSpeech = false;
+
+        // Audio streaming setup
+        let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let sourceNode = null;
+        let isMuted = JSON.parse(localStorage.getItem('isMuted')) || false;
+        let isStreaming = false;
+
+        // Initialize mute button state
+        const muteButton = document.getElementById('mute-button');
+        updateMuteButton();
+
+        // Toggle mute state
+        function toggleMute() {
+            isMuted = !isMuted;
+            localStorage.setItem('isMuted', JSON.stringify(isMuted));
+            updateMuteButton();
+            if (isMuted) {
+                stopAudioStream();
+            }
+        }
+
+        // Update mute button appearance
+        function updateMuteButton() {
+            muteButton.textContent = isMuted ? '🔇 Unmute' : '🔊 Mute';
+            muteButton.classList.toggle('muted', isMuted);
+        }
+
+        // Stop audio stream
+        function stopAudioStream() {
+            if (sourceNode) {
+                sourceNode.stop();
+                sourceNode.disconnect();
+                sourceNode = null;
+            }
+            isStreaming = false;
+            if (audioContext.state === 'running') {
+                audioContext.suspend();
+            }
+        }
+
+        // Play audio with interrupt capability
+        function playAudio(audioData) {
+            stopAudioStream(); // Interrupt any currently playing audio
+            if (!isMuted) {
+                if (typeof audioData === 'string') {
+                    // Handle base64 audio data
+                    currentAudio = new Audio(`data:audio/mp3;base64,${audioData}`);
+                } else {
+                    // Handle streaming audio
+                    currentAudio = new Audio(URL.createObjectURL(audioData));
+                }
+                currentAudio.play().catch(e => displayError('Audio playback failed: ' + e.message));
+                currentAudio.onended = () => {
+                    currentAudio = null;
+                };
+            }
+        }
+
+        // Stream audio from the server
+        async function streamAudio(text, history) {
+            try {
+                const response = await fetch("/stream_audio", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        text,
+                        history,
+                        is_speech: true,
+                        dual_response: false
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+                }
+
+                const blob = await response.blob();
+                playAudio(blob);
+            } catch (error) {
+                console.error('Audio streaming error:', error);
+                displayError(`Error streaming audio: ${error.message}`);
+            }
+        }
 
         // Load dual response toggle state from local storage
         let dualResponseEnabled = JSON.parse(localStorage.getItem('dualResponseEnabled')) || false;
@@ -686,7 +824,7 @@
                     messageTextElement.textContent += text.charAt(index);
                     index++;
                     scrollToBottom();
-                    setTimeout(type, 10);
+                    setTimeout(type, 30);
                 } else if (callback) {
                     callback();
                 }
@@ -696,7 +834,7 @@
         }
 
         // Stream dual responses with typing animation
-        function streamDualResponses(responses, messageId, isSpeech, callback) {
+        function streamDualResponses(responses, messageId, isSpeech) {
             const div = document.createElement('div');
             div.className = 'dual-response-container';
             div.id = `dual-${messageId}`;
@@ -706,7 +844,7 @@
                     ${responses.map((response, index) => `
                         <div class="dual-response" id="response-${messageId}-${index}">
                             <span class="message-text"></span>
-                            <button class="prefer-button" onclick="selectResponse('${messageId}', ${index}, ${isSpeech}, () => {${callback ? 'callback()' : ''}})">Prefer this response</button>
+                            <button class="prefer-button" onclick="selectResponse('${messageId}', ${index}, ${isSpeech})">Prefer this response</button>
                         </div>
                     `).join('')}
                 </div>
@@ -730,8 +868,8 @@
                         setTimeout(type, 7);
                     } else {
                         completedResponses++;
-                        if (completedResponses === totalResponses && !callback) {
-                            processNextQuery();
+                        if (completedResponses === totalResponses) {
+                            // Wait for user selection before proceeding
                         }
                     }
                 }
@@ -740,7 +878,7 @@
         }
 
         // Handle dual response selection
-        async function selectResponse(messageId, selectedIndex, isSpeech, callback) {
+        async function selectResponse(messageId, selectedIndex, isSpeech) {
             const container = document.getElementById(`dual-${messageId}`);
             const message = chatHistory.find(msg => msg.id === messageId);
             const responses = message.responses;
@@ -770,39 +908,10 @@
 
             // Generate and play audio if the input was speech
             if (isSpeech) {
-                try {
-                    const response = await fetch("/generate_audio", {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            text: selectedResponse.text,
-                            history: chatHistory.slice(-5).map(msg => ({
-                                role: msg.role,
-                                text: msg.text,
-                                timestamp: msg.timestamp,
-                                isSpeech: msg.isSpeech
-                            })),
-                            is_speech: true,
-                            dual_response: false
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
-                    }
-
-                    const data = await response.json();
-                    if (data.audio) {
-                        const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
-                        audio.play().catch(e => displayError('Audio playback failed: ' + e.message));
-                    }
-                } catch (error) {
-                    console.error('Audio fetch error:', error);
-                    displayError(`Error generating audio: ${error.message}`);
-                }
+                await streamAudio(selectedResponse.text, chatHistory.slice(-5));
             }
 
-            if (callback) callback();
+            isProcessingQueue = false;
             processNextQuery();
         }
 
@@ -845,6 +954,7 @@
 
         // Enqueue a message to be processed
         function enqueueMessage() {
+            stopAudioStream(); // Interrupt audio when sending a new message
             const input = document.getElementById('user-input');
             const text = input.value.trim();
             if (!text) return;
@@ -928,10 +1038,7 @@
                     };
                     chatHistory.push(botMessage);
                     localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
-                    streamDualResponses(data.responses, messageId, isSpeech, () => {
-                        isProcessingQueue = false;
-                        processNextQuery();
-                    });
+                    streamDualResponses(data.responses, messageId, isSpeech);
                 } else {
                     // Handle single response
                     const botMessage = { 
@@ -943,10 +1050,9 @@
                     chatHistory.push(botMessage);
                     localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
                     typeMessage(botMessage, () => {
-                        // Play audio only if present and if the input was speech
-                        if (data.audio && isSpeech) {
-                            const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
-                            audio.play().catch(e => displayError('Audio playback failed: ' + e.message));
+                        // Stream audio if the input was speech
+                        if (isSpeech) {
+                            streamAudio(data.responses[0], sanitizedHistory);
                         }
                         isProcessingQueue = false;
                         processNextQuery();
@@ -1035,44 +1141,6 @@
 
         // Initial scroll to bottom
         scrollToBottom();
-
-        // Add PDF upload functionality
-        async function uploadPDF(file) {
-            if (!file) return;
-            
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            try {
-                const response = await fetch('/upload-pdf', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error ${response.status}`);
-                }
-                
-                const data = await response.json();
-                displayMessage('system', `Successfully processed ${file.name}`);
-            } catch (error) {
-                console.error('Upload error:', error);
-                displayError(`Error uploading PDF: ${error.message}`);
-            }
-        }
-
-        function displayMessage(role, text) {
-            const div = document.createElement('div');
-            div.className = `message ${role}-message`;
-            div.innerHTML = `
-                <div class="message-bubble">
-                    ${text}
-                    <div class="timestamp">${new Date().toLocaleTimeString()}</div>
-                </div>
-            `;
-            chatContainer.appendChild(div);
-            scrollToBottom();
-        }
     </script>
 </body>
 </html>
