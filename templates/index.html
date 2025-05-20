@@ -877,8 +877,8 @@
             });
         }
 
-        // Handle dual response selection
-        async function selectResponse(messageId, selectedIndex, isSpeech) {
+        // Function to handle dual response selection
+        function selectResponse(messageId, selectedIndex, isSpeech) {
             const container = document.getElementById(`dual-${messageId}`);
             const message = chatHistory.find(msg => msg.id === messageId);
             const responses = message.responses;
@@ -906,22 +906,13 @@
             `;
             scrollToBottom();
 
-            // Generate and play audio if the input was speech
-            if (isSpeech) {
-                await streamAudio(selectedResponse.text, chatHistory.slice(-5));
-            }
-
             isProcessingQueue = false;
             processNextQuery();
         }
 
         // Display error message
         function displayError(message) {
-            const div = document.createElement('div');
-            div.className = 'error-message';
-            div.textContent = message;
-            chatContainer.appendChild(div);
-            scrollToBottom();
+            console.error(message);
         }
 
         // Display loader
@@ -954,7 +945,6 @@
 
         // Enqueue a message to be processed
         function enqueueMessage() {
-            stopAudioStream(); // Interrupt audio when sending a new message
             const input = document.getElementById('user-input');
             const text = input.value.trim();
             if (!text) return;
@@ -964,13 +954,13 @@
             processNextQuery();
         }
 
-        // Process the next query in the queue
+        // Function to process the next query in the queue
         async function processNextQuery() {
             if (isProcessingQueue || queryQueue.length === 0) return;
-
+            
             isProcessingQueue = true;
             const { text, isSpeech } = queryQueue.shift();
-
+            
             // Add user message to history and display immediately
             const userMessage = { 
                 role: 'user', 
@@ -1050,10 +1040,6 @@
                     chatHistory.push(botMessage);
                     localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
                     typeMessage(botMessage, () => {
-                        // Stream audio if the input was speech
-                        if (isSpeech) {
-                            streamAudio(data.responses[0], sanitizedHistory);
-                        }
                         isProcessingQueue = false;
                         processNextQuery();
                     });
