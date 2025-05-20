@@ -1,7 +1,11 @@
 import os
+from typing import List, Dict, Optional
 from openai import OpenAI
 from dotenv import load_dotenv
-from pdf_processor import get_vector_store, query_pdf
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -9,113 +13,90 @@ load_dotenv()
 # Initialize OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def generate_response(user_input: str, history: list, pdf_context: str = "", dual_response: bool = False) -> dict:
-    """
-    Generate a response using OpenAI's GPT model, incorporating PDF context if available.
-    Supports dual responses with different tones if dual_response is True.
-    
-    Args:
-        user_input (str): The user's input message
-        history (list): List of previous messages in the conversation
-        pdf_context (str): Relevant context from PDF query (optional)
-        dual_response (bool): Whether to generate two responses with different tones
-    
-    Returns:
-        dict: Contains 'responses' (list of responses) and 'audio' (None in this case)
-    """
-    try:
-        # Query the PDF for relevant information
-        pdf_response = query_pdf(user_input)
-        
-        # Define a single comprehensive system prompt
-        system_prompt = """You are a helpful AI assistant that provides answers based on the provided document context. 
-        Always prioritize using the document context to answer questions. If the document context is relevant, use it as your primary source.
-        
-        When using document context:
-        1. Quote relevant parts when appropriate
-        2. Explain the context clearly
-        3. Connect the context to the user's question
-        
-        When the document context isn't relevant:
-        1. Acknowledge that the information isn't in the document
-        2. Provide a helpful general response
-        3. Suggest what kind of information might be more relevant
-        
-        IF YOU ARE ASKED FOR A SPECIFIC LANGUAGE, PROVIDE THE OUTPUT IN THAT LANGUAGE AND ITS FONT.
-        ALSO MAKE HINDI, BANGLA, AND GUJRATI LANGUAGES AVAILABLE.
+class LLMHandler:
+    def __init__(self, model_name: str = "gpt-3.5-turbo"):
         """
+        Initialize the LLM handler.
         
-        # Append PDF context if available
-        if pdf_response:
-            system_prompt += f"\n\nHere is the relevant information from the document:\n{pdf_response}"
-        
-        # Prepare messages for the API call
-        messages = []
-        
-        # Add conversation history
-        for msg in history:
-            role = msg.get("role", "user")
-            if role == "bot":
-                role = "assistant"
-            messages.append({
-                "role": role,
-                "content": msg.get("text", "")
-            })
-        
-        # Add the current user input
-        messages.append({"role": "user", "content": user_input})
-        
-        if dual_response:
-            # Request two responses with different styles using the same system prompt
-            system_message = (
-                f"{system_prompt}\n\n"
-                "Provide two distinct responses to the user's input:\n"
-                "1. A concise, straightforward response (2-3 sentences, casual tone)\n"
-                "2. A structured, formal response with clear explanations and organized points\n"
-                "Label them as 'Concise Response:' and 'Structured Response:'\n"
-                "If applicable, include formatting such as **bold**, *italic*, - bullet points, or LaTeX for formulas (e.g., $$E = mc^2$$)."
-            )
+        Args:
+            model_name: Name of the OpenAI model to use
+        """
+        self.api_key = os.getenv("OPENAI_API_KEY")
+        if not self.api_key:
+            raise ValueError("OPENAI_API_KEY not found in environment variables")
             
-            messages.insert(0, {"role": "system", "content": system_message})
-            
-            # Generate response using OpenAI API
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=messages,
-                max_tokens=1500,  # Increased token limit for two responses
-                temperature=0.7
-            )
-            
-            # Parse the response to extract the two parts
-            response_text = response.choices[0].message.content.strip()
-            responses = ["", ""]
-            
-            # Split the response based on labels
-            if "Concise Response:" in response_text and "Structured Response:" in response_text:
-                parts = response_text.split("Structured Response:")
-                responses[0] = parts[0].replace("Concise Response:", "").strip()
-                responses[1] = parts[1].strip()
-            else:
-                # Fallback: if the response doesn't follow the expected format, split evenly
-                responses = response_text.split("\n\n", 1)
-                if len(responses) < 2:
-                    responses.append("I apologize, I couldn't generate a second response.")
-            
-            return {"responses": responses, "audio": None}
-        else:
-            # Use the system prompt for single response
-            messages.insert(0, {"role": "system", "content": system_prompt})
-            
-            # Generate response using OpenAI API
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=messages,
-                max_tokens=1000,
-                temperature=0.7
-            )
-            
-            return {"responses": [response.choices[0].message.content.strip()], "audio": None}
+        self.client = OpenAI(api_key=self.api_key)
+        self.model_name = model_name
+        logger.info(f"LLM handler initialized with model: {model_name}")
     
-    except Exception as e:
-        print(f"Error generating response: {str(e)}")
-        return {"responses": ["I apologize, but I encountered an error while generating a response. Please try again."], "audio": None}
+    def generate_response(self, 
+                         query: str, 
+                         context: List[Dict], 
+                         dual_response: bool = False,
+                         conversation_history: Optional[str] = None) -> Dict:
+        """
+        Generate a response using the LLM.
+        
+        Args:
+            query: User query
+            context: Retrieved context from RAG system
+            dual_response: Whether to generate dual responses
+            conversation_history: Optional conversation history string
+            
+        Returns:
+            Dict: Response containing text and optional audio
+        """
+        try:
+            # Format the context
+            context_text = "\n\n".join([f"Document {i+1}:\n{chunk['text']}" 
+                                      for i, chunk in enumerate(context)])
+            
+            # Create the system message with context and conversation history
+            system_message = "You are a helpful AI assistant. Use the following context to answer the user's question."
+            if conversation_history:
+                system_message += f"\n\n{conversation_history}"
+            if context_text:
+                system_message += f"\n\nRelevant context:\n{context_text}"
+            
+            if dual_response:
+                # Generate dual responses
+                system_message += "\n\nPlease provide two different responses:\n1. A concise response\n2. A more detailed, structured response"
+                
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=[
+                        {"role": "system", "content": system_message},
+                        {"role": "user", "content": query}
+                    ],
+                    temperature=0.7,
+                    max_tokens=1000
+                )
+                
+                response_text = response.choices[0].message.content.strip()
+                responses = []
+                
+                if "Concise Response:" in response_text and "Structured Response:" in response_text:
+                    parts = response_text.split("Structured Response:")
+                    responses.append(parts[0].replace("Concise Response:", "").strip())
+                    responses.append(parts[1].strip())
+                else:
+                    responses = response_text.split("\n\n", 1)
+                    if len(responses) < 2:
+                        responses.append("I apologize, I couldn't generate a second response.")
+                
+                return {"responses": responses, "audio": None}
+            else:
+                # Single response
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=[
+                        {"role": "system", "content": system_message},
+                        {"role": "user", "content": query}
+                    ],
+                    temperature=0.7,
+                    max_tokens=1000
+                )
+                return {"responses": [response.choices[0].message.content.strip()], "audio": None}
+        except Exception as e:
+            logger.error(f"Error generating response: {str(e)}")
+            return {"responses": ["I apologize, but I encountered an error while generating the response. Please try again."], "audio": None}

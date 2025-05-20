@@ -2,12 +2,22 @@ import os
 from elevenlabs.client import ElevenLabs
 from elevenlabs import stream
 from dotenv import load_dotenv
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
 load_dotenv()
 
+# Get API key
+api_key = os.getenv("ELEVENLABS_API_KEY")
+if not api_key:
+    raise ValueError("ELEVENLABS_API_KEY not found in environment variables")
+
 # Initialize ElevenLabs client with API key
-client = ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
+client = ElevenLabs(api_key=api_key)
 
 def text_to_speech(text):
     """
@@ -38,5 +48,5 @@ def text_to_speech(text):
         return audio_bytes
 
     except Exception as e:
-        print(f"Error generating audio: {e}")
+        logger.error(f"Error generating audio: {e}")
         return None

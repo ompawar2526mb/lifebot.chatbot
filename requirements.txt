@@ -12,3 +12,5 @@ python-multipart
 jinja2
 pydantic
 llama-index-llms-openai
+numpy
+tqdm

@@ -1,111 +1,219 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, HTMLResponse
 from pydantic import BaseModel
-from llm import generate_response
-from tts import text_to_speech
-from stt import validate_speech_input
-import base64
+from llm import LLMHandler
+from pdf_processor import PDFProcessor
+from rag import RAGSystem
 from fastapi.templating import Jinja2Templates
 import os
 from typing import List, Optional
+from pathlib import Path
+import logging
+import uvicorn
+import json
+import base64
+from tts import text_to_speech  # Import the TTS function
 
-app = FastAPI()
+# Set up logging with more detailed format
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('app.log')
+    ]
+)
+logger = logging.getLogger(__name__)
 
-# Create templates directory if it doesn't exist
-os.makedirs("templates", exist_ok=True)
+app = FastAPI(title="RAG API", description="RAG System API for PDF Processing and Querying")
+
+# Create necessary directories
+DATA_DIR = Path("DATA")
+RAW_PDFS_DIR = DATA_DIR / "raw_pdfs"
+EMBEDDINGS_DIR = DATA_DIR / "embeddings"
+
+# Create directories if they don't exist
+RAW_PDFS_DIR.mkdir(parents=True, exist_ok=True)
+EMBEDDINGS_DIR.mkdir(parents=True, exist_ok=True)
+
+# Verify embeddings, exclude .gitkeep
+embedding_dirs = [d for d in EMBEDDINGS_DIR.glob("*") if d.is_dir() and d.name != ".gitkeep"]
+if embedding_dirs:
+    logger.info(f"Found {len(embedding_dirs)} existing embedding directories:")
+    for dir in embedding_dirs:
+        logger.info(f"- {dir.name}")
+else:
+    logger.warning("No existing embeddings found!")
 
 # Set up templates
 templates = Jinja2Templates(directory="templates")
 
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 # Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Initialize RAG system components
+try:
+    logger.info("Initializing RAG system components...")
+    pdf_processor = PDFProcessor(data_dir="DATA")
+    llm_handler = LLMHandler(model_name="gpt-3.5-turbo")
+    rag_system = RAGSystem(pdf_processor, llm_handler)
+    
+    # Load existing embeddings
+    if embedding_dirs:
+        logger.info("Loading existing embeddings...")
+        if rag_system.process_documents():
+            logger.info("Successfully loaded existing embeddings")
+        else:
+            logger.warning("Failed to load existing embeddings")
+    else:
+        logger.warning("No embeddings found to load")
+except Exception as e:
+    logger.error(f"Failed to initialize RAG system: {str(e)}")
+    raise
+
+class Message(BaseModel):
+    role: str
+    text: str
+    timestamp: Optional[str] = None
+    isSpeech: Optional[bool] = False
+
 class ChatRequest(BaseModel):
     text: str
-    history: list
-    is_speech: bool = False
-    dual_response: bool = False
+    history: Optional[List[Message]] = []
+    is_speech: Optional[bool] = False
+    dual_response: Optional[bool] = False
 
 class ChatResponse(BaseModel):
     responses: List[str]
     audio: Optional[str] = None
 
-class AudioRequest(BaseModel):
-    text: str
-
-class AudioResponse(BaseModel):
-    audio: Optional[str] = None
-
 @app.get("/", response_class=HTMLResponse)
 async def get_index(request: Request):
+    logger.info("Serving index page")
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     try:
-        # Validate speech input
-        validated_text = validate_speech_input(request.text)
-        if not validated_text:
-            raise HTTPException(status_code=400, detail="Invalid speech input")
+        logger.info(f"Received chat request: {request.text}")
+        
+        # Check if we have any processed documents
+        if not rag_system.documents_processed:
+            return {
+                "responses": ["No documents have been processed. Please upload a PDF first."],
+                "audio": None
+            }
 
-        # Generate response
-        response_data = generate_response(
-            validated_text, 
-            request.history, 
+        # Query the RAG system
+        context = rag_system.query(request.text)
+        if not context:
+            logger.warning("No response generated for query")
+            return {
+                "responses": ["No relevant information found in the documents. Please try a different query."],
+                "audio": None
+            }
+        
+        # Generate response using RAG system
+        response = rag_system.generate_response(
+            request.text, 
+            context, 
             dual_response=request.dual_response
         )
         
-        if not response_data or not response_data.get("responses"):
-            raise HTTPException(status_code=500, detail="Failed to generate response")
-
-        # Initialize audio response
-        audio_base64 = None
-
-        # Generate audio only for speech input and if NOT in dual response mode
-        if request.is_speech and not request.dual_response and response_data["responses"]:
-            try:
-                # Use the first response for audio
-                audio_bytes = text_to_speech(response_data["responses"][0])
-                if audio_bytes:
-                    audio_base64 = base64.b64encode(audio_bytes).decode()
-            except Exception as e:
-                print(f"Audio generation error: {str(e)}")
-                # Continue without audio if generation fails
-
-        return {
-            "responses": response_data["responses"],
-            "audio": audio_base64
-        }
+        # Generate audio if the request is from speech input
+        if request.is_speech:
+            audio_bytes = text_to_speech(response["responses"][0])
+            if audio_bytes:
+                audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+                response["audio"] = audio_base64
+        
+        logger.info("Successfully generated response")
+        return response
+        
     except Exception as e:
-        print(f"Chat error: {str(e)}")
+        logger.error(f"Chat error: {str(e)}")
+        return {
+            "responses": ["I apologize, but I encountered an error. Please try again."],
+            "audio": None
+        }
+
+@app.post("/upload-pdf")
+async def upload_pdf(file: UploadFile = File(...)):
+    try:
+        if not file.filename.endswith('.pdf'):
+            raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+        
+        # Save the uploaded file
+        file_path = RAW_PDFS_DIR / file.filename
+        with open(file_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+        
+        # Process the PDF
+        if rag_system.process_document(str(file_path)):
+            return {"message": f"Successfully processed {file.filename}"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to process PDF")
+            
+    except Exception as e:
+        logger.error(f"PDF upload error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/generate_audio", response_model=AudioResponse)
-async def generate_audio(request: AudioRequest):
+@app.post("/generate_audio", response_model=ChatResponse)
+async def generate_audio(request: ChatRequest):
     try:
-        # Generate audio for the selected response
-        audio_bytes = text_to_speech(request.text)
+        logger.info(f"Received audio generation request for: {request.text}")
+        # Query the RAG system
+        context = rag_system.query(request.text)
+        if not context:
+            logger.warning("No response generated for audio query")
+            return {
+                "responses": ["No relevant information found in the documents."],
+                "audio": None
+            }
+        
+        # Generate response
+        response = rag_system.generate_response(request.text, context, dual_response=False)
+        
+        # Generate audio
+        audio_bytes = text_to_speech(response["responses"][0])
         if audio_bytes:
-            audio_base64 = base64.b64encode(audio_bytes).decode()
-            return {"audio": audio_base64}
+            audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+            response["audio"] = audio_base64
         else:
-            return {"audio": None}
+            logger.warning("Failed to generate audio")
+            response["audio"] = None
+        
+        logger.info("Successfully generated audio response")
+        return response
     except Exception as e:
-        print(f"Audio generation error: {str(e)}")
-        return {"audio": None}
+        logger.error(f"Audio generation error: {str(e)}")
+        return {
+            "responses": ["I apologize, but I encountered an error while generating audio."],
+            "audio": None
+        }
 
-@app.options("/chat")
-async def options_chat():
-    return JSONResponse(content={}, status_code=200)
+def start():
+    """Start the FastAPI server with uvicorn"""
+    logger.info("Starting FastAPI server...")
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8001,
+        reload=True,
+        log_level="info"
+    )
 
-@app.options("/generate_audio")
-async def options_generate_audio():
-    return JSONResponse(content={}, status_code=200)
+if __name__ == "__main__":
+    start()

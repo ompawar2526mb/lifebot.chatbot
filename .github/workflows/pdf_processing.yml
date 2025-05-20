@@ -36,7 +36,7 @@ jobs:
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       run: |
-        python -c "from pdf_processor import process_new_pdfs; process_new_pdfs()"
+        python -c "from pdf_processor import PDFProcessor; processor = PDFProcessor(); processor.process_pdfs()"
         
     - name: Commit processed files
       run: |

@@ -1,255 +1,298 @@
 import os
-from pathlib import Path
-from typing import List, Optional, Dict
-from llama_index.core import (
-    VectorStoreIndex,
-    SimpleDirectoryReader,
-    StorageContext,
-    load_index_from_storage,
-    Settings,
-    Document
-)
-from llama_index.embeddings.openai import OpenAIEmbedding
-from llama_index.core.node_parser import SentenceSplitter
-from llama_index.core.response_synthesizers import get_response_synthesizer
-from llama_index.core.retrievers import VectorIndexRetriever
-from llama_index.core.query_engine import RetrieverQueryEngine
-from llama_index.core.vector_stores.types import VectorStoreQueryMode
+from typing import List, Dict
+import numpy as np
+import faiss
+from openai import OpenAI
 from dotenv import load_dotenv
-import hashlib
+from llama_index.core import SimpleDirectoryReader, Document
+from llama_index.core.node_parser import SimpleNodeParser
+from llama_index.core.node_parser import SentenceSplitter
+from tqdm import tqdm
+import logging
 import json
+from pathlib import Path
+import hashlib
 import shutil
-from functools import lru_cache
-import time
 
-# Load environment variables
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 load_dotenv()
 
-# Constants
-DATA_DIR = Path("DATA")
-RAW_PDFS_DIR = DATA_DIR / "raw_pdfs"
-EMBEDDINGS_DIR = DATA_DIR / "embeddings"
-METADATA_FILE = DATA_DIR / "pdf_metadata.json"
-
-# Add cache configuration
-CACHE_SIZE = 100  # Number of queries to cache
-QUERY_CACHE_FILE = DATA_DIR / "query_cache.json"
-
-def get_pdf_hash(pdf_path: Path) -> str:
-    """Generate a hash for the PDF file to track changes."""
-    with open(pdf_path, 'rb') as f:
-        return hashlib.md5(f.read()).hexdigest()
-
-def load_metadata() -> dict:
-    """Load PDF metadata from JSON file."""
-    if METADATA_FILE.exists():
-        try:
-            with open(METADATA_FILE, 'r') as f:
-                content = f.read().strip()
-                if content:  # Check if file is not empty
-                    return json.loads(content)
-                else:
-                    print(f"Warning: {METADATA_FILE} exists but is empty. Returning empty dict.")
-                    return {}
-        except json.JSONDecodeError as e:
-            print(f"Warning: Could not parse {METADATA_FILE}: {e}. Creating new metadata.")
-            # Backup the corrupted file
-            backup_file = METADATA_FILE.with_suffix('.json.bak')
-            shutil.copy2(METADATA_FILE, backup_file)
-            print(f"Backed up corrupted metadata to {backup_file}")
-            return {}
-    return {}
-
-def save_metadata(metadata: dict):
-    """Save PDF metadata to JSON file."""
-    with open(METADATA_FILE, 'w') as f:
-        json.dump(metadata, f, indent=2)
-
-def process_pdf(pdf_path: Path) -> VectorStoreIndex:
-    """Process a single PDF file and create its vector store."""
-    print(f"Processing PDF: {pdf_path}")
-    
-    # Create embeddings directory
-    embedding_dir = EMBEDDINGS_DIR / pdf_path.stem
-    if embedding_dir.exists():
-        shutil.rmtree(embedding_dir)
-    embedding_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Load and process the PDF
-    documents = SimpleDirectoryReader(
-        input_files=[str(pdf_path)],
-        recursive=True,
-        filename_as_id=True
-    ).load_data()
-    
-    # Configure node parser for better text chunking
-    node_parser = SentenceSplitter(
-        chunk_size=1024,
-        chunk_overlap=200,
-        separator="\n"
-    )
-    
-    # Configure settings
-    Settings.embed_model = OpenAIEmbedding()
-    Settings.node_parser = node_parser
-    
-    # Create index
-    index = VectorStoreIndex.from_documents(
-        documents,
-        show_progress=True
-    )
-    
-    # Save embeddings
-    index.storage_context.persist(str(embedding_dir))
-    print(f"Embeddings saved to: {embedding_dir}")
-    
-    return index
-
-def process_new_pdfs() -> List[str]:
-    """Process any new PDFs in the raw_pdfs directory."""
-    metadata = load_metadata()
-    processed_files = []
-    
-    # Create directories if they don't exist
-    RAW_PDFS_DIR.mkdir(parents=True, exist_ok=True)
-    EMBEDDINGS_DIR.mkdir(parents=True, exist_ok=True)
-    
-    # Process each PDF
-    pdf_files = list(RAW_PDFS_DIR.glob("*.pdf"))
-    print(f"Found {len(pdf_files)} PDF files in {RAW_PDFS_DIR}")
-    
-    for pdf_path in pdf_files:
-        pdf_hash = get_pdf_hash(pdf_path)
+class PDFProcessor:
+    def __init__(self, data_dir: str = "DATA"):
+        """Initialize the PDF processor with FAISS vector store and OpenAI embeddings."""
+        self.api_key = os.getenv("OPENAI_API_KEY")
+        if not self.api_key:
+            raise ValueError("OPENAI_API_KEY not found in environment variables")
         
-        # Skip if PDF hasn't changed
-        if pdf_path.name in metadata and metadata[pdf_path.name]['hash'] == pdf_hash:
-            print(f"Skipping {pdf_path.name} - already processed and unchanged")
-            continue
+        self.client = OpenAI(api_key=self.api_key)
         
-        print(f"Processing new or changed PDF: {pdf_path.name}")
-        # Process PDF
-        process_pdf(pdf_path)
+        # Initialize directory structure
+        self.data_dir = Path(data_dir)
+        self.raw_pdfs_dir = self.data_dir / "raw_pdfs"
+        self.embeddings_dir = self.data_dir / "embeddings"
         
-        # Update metadata
-        metadata[pdf_path.name] = {
-            'hash': pdf_hash,
-            'processed_date': str(pdf_path.stat().st_mtime),
-            'embedding_dir': str(EMBEDDINGS_DIR / pdf_path.stem)
-        }
-        processed_files.append(pdf_path.name)
-    
-    if processed_files:
-        save_metadata(metadata)
-        print(f"Processed {len(processed_files)} new PDFs: {processed_files}")
-    else:
-        print("No new PDFs to process")
-    
-    return processed_files
-
-def get_vector_store(pdf_name: Optional[str] = None) -> VectorStoreIndex:
-    """Get vector store for a specific PDF or all PDFs."""
-    metadata = load_metadata()
-    
-    if pdf_name:
-        if pdf_name not in metadata:
-            raise ValueError(f"No embeddings found for {pdf_name}")
-        embedding_dir = Path(metadata[pdf_name]['embedding_dir'])
-        if not embedding_dir.exists():
-            raise ValueError(f"Embedding directory not found for {pdf_name}")
-        storage_context = StorageContext.from_defaults(persist_dir=str(embedding_dir))
-        return load_index_from_storage(storage_context)
-    
-    # If no specific PDF is requested, combine all embeddings
-    indices = []
-    for pdf_info in metadata.values():
-        embedding_dir = Path(pdf_info['embedding_dir'])
-        if embedding_dir.exists():
-            storage_context = StorageContext.from_defaults(persist_dir=str(embedding_dir))
-            indices.append(load_index_from_storage(storage_context))
-    
-    if not indices:
-        raise ValueError("No embeddings found for any PDFs")
-    
-    return indices[0] if len(indices) == 1 else indices
-
-def load_query_cache() -> Dict:
-    """Load query cache from file."""
-    if QUERY_CACHE_FILE.exists():
-        with open(QUERY_CACHE_FILE, 'r') as f:
-            return json.load(f)
-    return {}
-
-def save_query_cache(cache: Dict):
-    """Save query cache to file."""
-    with open(QUERY_CACHE_FILE, 'w') as f:
-        json.dump(cache, f, indent=2)
-
-@lru_cache(maxsize=CACHE_SIZE)
-def get_cached_query(query: str, pdf_name: Optional[str] = None) -> Optional[str]:
-    """Get cached query result if available."""
-    cache = load_query_cache()
-    cache_key = f"{pdf_name}:{query}" if pdf_name else query
-    return cache.get(cache_key)
-
-def cache_query_result(query: str, result: str, pdf_name: Optional[str] = None):
-    """Cache query result."""
-    cache = load_query_cache()
-    cache_key = f"{pdf_name}:{query}" if pdf_name else query
-    cache[cache_key] = result
-    save_query_cache(cache)
-
-def query_pdf(query: str, pdf_name: Optional[str] = None) -> str:
-    """Query the PDF(s) using the vector store with enhanced retrieval."""
-    try:
-        # Add debugging to check available PDFs
-        metadata = load_metadata()
-        available_pdfs = list(metadata.keys())
-        print(f"Available PDFs in metadata: {available_pdfs}")
+        # Create directories if they don't exist
+        self.raw_pdfs_dir.mkdir(parents=True, exist_ok=True)
+        self.embeddings_dir.mkdir(parents=True, exist_ok=True)
         
-        # Get the vector store
-        index_or_indices = get_vector_store(pdf_name)
+        # Initialize FAISS index
+        self.dimension = 1536  # OpenAI ada-002 embedding dimension
+        self.index = None  # Will be initialized when we have data
         
-        # Handle the case when multiple indices are returned
-        if isinstance(index_or_indices, list):
-            # Use the first index for simplicity or implement a more complex solution
-            print(f"Multiple indices found. Using the first one from: {pdf_name if pdf_name else 'all PDFs'}")
-            index = index_or_indices[0]
+        # Document store
+        self.documents: List[Dict] = []
+        
+        # Configure chunking
+        self.chunk_size = 1000  # Characters per chunk
+        self.chunk_overlap = 200  # Overlap between chunks
+    
+    def process_pdfs(self) -> None:
+        """Process all PDFs in the raw_pdfs directory."""
+        if not self.raw_pdfs_dir.exists():
+            logger.error(f"Raw PDFs directory not found: {self.raw_pdfs_dir}")
+            return
+        
+        pdf_files = [f for f in self.raw_pdfs_dir.glob("*.pdf") if f.name != ".gitkeep"]
+        
+        if not pdf_files:
+            logger.warning(f"No PDF files found in {self.raw_pdfs_dir}")
+            return
+        
+        logger.info(f"Found {len(pdf_files)} PDF files to process")
+        
+        for pdf_path in pdf_files:
+            logger.info(f"\n{'='*50}")
+            logger.info(f"Processing: {pdf_path.name}")
+            logger.info(f"{'='*50}")
+            
+            try:
+                self.process_pdf(str(pdf_path))
+                logger.info(f"Successfully processed {pdf_path.name}")
+            except Exception as e:
+                logger.error(f"Error processing {pdf_path.name}: {str(e)}")
+    
+    def _get_pdf_hash(self, pdf_path: str) -> str:
+        """Generate a hash for the PDF file to use as a unique identifier."""
+        with open(pdf_path, 'rb') as f:
+            return hashlib.md5(f.read()).hexdigest()
+    
+    def _get_pdf_storage_path(self, pdf_path: str) -> Path:
+        """Get the storage path for a specific PDF."""
+        pdf_hash = self._get_pdf_hash(pdf_path)
+        pdf_name = Path(pdf_path).stem
+        pdf_dir = self.embeddings_dir / f"{pdf_name}_{pdf_hash}"
+        pdf_dir.mkdir(exist_ok=True)
+        return pdf_dir
+    
+    def _copy_pdf_to_raw(self, pdf_path: str) -> Path:
+        """Copy PDF to raw_pdfs directory and return the new path."""
+        pdf_name = Path(pdf_path).name
+        target_path = self.raw_pdfs_dir / pdf_name
+        
+        # Copy the file if it's not already in raw_pdfs
+        if not target_path.exists():
+            shutil.copy2(pdf_path, target_path)
+            logger.info(f"Copied {pdf_path} to {target_path}")
+        
+        return target_path
+    
+    def _load_pdf_data(self, pdf_path: str) -> tuple:
+        """Load existing data for a specific PDF if available."""
+        pdf_dir = self._get_pdf_storage_path(pdf_path)
+        index_path = pdf_dir / "faiss_index.bin"
+        documents_path = pdf_dir / "documents.json"
+        
+        if index_path.exists() and documents_path.exists():
+            logger.info(f"Loading existing data for {pdf_path}")
+            index = faiss.read_index(str(index_path))
+            
+            with open(documents_path, 'r') as f:
+                documents = json.load(f)
+                # Convert string embeddings back to numpy arrays
+                for doc in documents:
+                    doc['embedding'] = np.array(doc['embedding'])
+            
+            return index, documents
+        
+        return None, []
+    
+    def _save_pdf_data(self, pdf_path: str, index: faiss.Index, documents: List[Dict]):
+        """Save data for a specific PDF."""
+        pdf_dir = self._get_pdf_storage_path(pdf_path)
+        
+        # Save FAISS index
+        index_path = pdf_dir / "faiss_index.bin"
+        faiss.write_index(index, str(index_path))
+        
+        # Save documents
+        documents_path = pdf_dir / "documents.json"
+        # Convert numpy arrays to lists for JSON serialization
+        documents_to_save = []
+        for doc in documents:
+            doc_copy = doc.copy()
+            doc_copy['embedding'] = doc_copy['embedding'].tolist()
+            documents_to_save.append(doc_copy)
+        
+        with open(documents_path, 'w') as f:
+            json.dump(documents_to_save, f)
+    
+    def _initialize_index(self, n_vectors: int):
+        """Initialize FAISS index based on the number of vectors."""
+        if self.index is not None:
+            return
+            
+        # For small datasets, use a simple flat index
+        if n_vectors < 100:
+            logger.info("Using flat index for small dataset")
+            self.index = faiss.IndexFlatL2(self.dimension)
         else:
-            index = index_or_indices
+            # For larger datasets, use IVF index
+            nlist = min(n_vectors // 10, 100)  # Number of clusters
+            logger.info(f"Using IVF index with {nlist} clusters")
+            quantizer = faiss.IndexFlatL2(self.dimension)
+            self.index = faiss.IndexIVFFlat(quantizer, self.dimension, nlist)
+            self.index.nprobe = min(nlist // 10, 10)  # Number of clusters to search
+    
+    def _get_embedding(self, text: str) -> np.ndarray:
+        """Get embedding from OpenAI API."""
+        response = self.client.embeddings.create(
+            input=text,
+            model="text-embedding-ada-002"
+        )
+        return np.array(response.data[0].embedding)
+    
+    def _get_embeddings_batch(self, texts: List[str], batch_size: int = 32) -> np.ndarray:
+        """Get embeddings for a batch of texts."""
+        all_embeddings = []
+        for i in tqdm(range(0, len(texts), batch_size), desc="Generating embeddings"):
+            batch = texts[i:i + batch_size]
+            response = self.client.embeddings.create(
+                input=batch,
+                model="text-embedding-ada-002"
+            )
+            batch_embeddings = [data.embedding for data in response.data]
+            all_embeddings.extend(batch_embeddings)
+        return np.array(all_embeddings)
+    
+    def process_pdf(self, pdf_path: str) -> List[Dict]:
+        """
+        Process a PDF file and return its chunks with embeddings.
         
-        # Configure retriever
-        retriever = VectorIndexRetriever(
-            index=index,
-            similarity_top_k=5,  # Retrieve top 5 most relevant chunks
-            vector_store_query_mode=VectorStoreQueryMode.DEFAULT  # Use default query mode
+        Args:
+            pdf_path: Path to the PDF file
+            
+        Returns:
+            List of document chunks with metadata
+        """
+        logger.info(f"Processing PDF: {pdf_path}")
+        
+        # Copy PDF to raw_pdfs directory
+        raw_pdf_path = self._copy_pdf_to_raw(pdf_path)
+        
+        # Check if we already have processed this PDF
+        existing_index, existing_documents = self._load_pdf_data(raw_pdf_path)
+        if existing_index is not None:
+            logger.info(f"Using cached embeddings for {pdf_path}")
+            self.index = existing_index
+            self.documents = existing_documents
+            return self.documents
+        
+        # Load and parse PDF using LlamaIndex with optimized chunking
+        reader = SimpleDirectoryReader(input_files=[str(raw_pdf_path)])
+        documents = reader.load_data()
+        
+        # Use SentenceSplitter for better semantic chunking
+        parser = SentenceSplitter(
+            chunk_size=self.chunk_size,
+            chunk_overlap=self.chunk_overlap,
+            separator="\n"
+        )
+        nodes = parser.get_nodes_from_documents(documents)
+        
+        logger.info(f"Created {len(nodes)} chunks from the document")
+        
+        # Extract text chunks
+        chunks = [node.text for node in nodes]
+        
+        # Generate embeddings using OpenAI
+        logger.info("Generating embeddings...")
+        embeddings = self._get_embeddings_batch(chunks)
+        
+        # Initialize or update FAISS index
+        self._initialize_index(len(embeddings))
+        
+        # Add to FAISS index
+        if isinstance(self.index, faiss.IndexIVFFlat) and not self.index.is_trained:
+            logger.info("Training FAISS index...")
+            self.index.train(embeddings)
+        
+        logger.info("Adding vectors to FAISS index...")
+        self.index.add(embeddings)
+        
+        # Store documents with metadata
+        self.documents = [
+            {
+                "text": chunk,
+                "embedding": embedding,
+                "metadata": {
+                    "source": str(raw_pdf_path),
+                    "chunk_id": i,
+                    "chunk_size": len(chunk)
+                }
+            }
+            for i, (chunk, embedding) in enumerate(zip(chunks, embeddings))
+        ]
+        
+        # Save the data for this PDF
+        self._save_pdf_data(raw_pdf_path, self.index, self.documents)
+        
+        logger.info(f"Successfully processed {len(chunks)} chunks from {pdf_path}")
+        return self.documents
+    
+    def search(self, query: str, k: int = 5) -> List[Dict]:
+        """
+        Search for similar documents using FAISS.
+        
+        Args:
+            query: Search query
+            k: Number of results to return
+            
+        Returns:
+            List of similar documents with scores
+        """
+        if not self.documents:
+            return []
+            
+        # Generate query embedding using OpenAI
+        query_embedding = self._get_embedding(query)
+        
+        # Search in FAISS index
+        distances, indices = self.index.search(
+            query_embedding.reshape(1, -1).astype('float32'),
+            k
         )
         
-        # Configure response synthesizer
-        response_synthesizer = get_response_synthesizer()
+        # Return results
+        results = []
+        for idx, distance in zip(indices[0], distances[0]):
+            if idx < len(self.documents):
+                results.append({
+                    "text": self.documents[idx]["text"],
+                    "score": float(1 - distance),  # Convert distance to similarity score
+                    "metadata": self.documents[idx]["metadata"]
+                })
         
-        # Create query engine
-        query_engine = RetrieverQueryEngine(
-            retriever=retriever,
-            response_synthesizer=response_synthesizer
-        )
-        
-        # Execute query
-        response = query_engine.query(query)
-        
-        # Format response with sources
-        if hasattr(response, 'source_nodes'):
-            sources = [node.node.text for node in response.source_nodes]
-            return f"Based on the document:\n\n{response.response}\n\nSources:\n" + "\n".join(f"- {source}" for source in sources)
-        return str(response.response)
-        
-    except Exception as e:
-        print(f"Error querying PDF: {str(e)}")
-        return f"Error querying PDF: {str(e)}"
+        return results
 
-# Initialize processing of any new PDFs when this module is imported
+def main():
+    """Run the PDF processor independently."""
+    processor = PDFProcessor()
+    processor.process_pdfs()
+
 if __name__ == "__main__":
-    print("Running PDF processor directly")
-    processed = process_new_pdfs()
-    print(f"Processed files: {processed}")
-else:
-    print("PDF processor module loaded") 
+    main()

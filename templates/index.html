@@ -3,23 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chatbot with Voice and Dual Responses</title>
+    <title>PG Glass Chatbot</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
 
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
         body {
-            background: linear-gradient(135deg, #1a1a1a, #2c2c2c);
+            background: linear-gradient(135deg, #2c2c2c, #4A4A4A);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             color: #e5e7eb;
             padding: clamp(5px, 2vw, 10px);
+            letter-spacing: -0.01em;
         }
 
         .container {
@@ -41,28 +44,24 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            border-bottom: 2px solid #0a84ff;
+            border-bottom: 2px solid #F15A29;
             position: sticky;
             top: 0;
             z-index: 10;
         }
 
-        .header .avatar {
-            width: clamp(30px, 4vw, 36px);
-            height: clamp(30px, 4vw, 36px);
-            border-radius: 50%;
-            background: #0a84ff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: clamp(14px, 2vw, 16px);
-            font-weight: bold;
+        .header .logo {
+            width: clamp(40px, 5vw, 50px);
+            height: auto;
+            border-radius: 12px;
+            object-fit: cover;
         }
 
         .header h1 {
             font-size: clamp(16px, 2.5vw, 20px);
-            font-weight: 500;
+            font-weight: 600;
             color: #e5e7eb;
+            letter-spacing: -0.02em;
         }
 
         .toggle-container {
@@ -73,8 +72,10 @@
         }
 
         .toggle-label {
-            font-size: clamp(12px, 2vw, 14px);
+            font-size: clamp(13px, 2.2vw, 15px);
             color: #e5e7eb;
+            font-weight: 500;
+            letter-spacing: -0.01em;
         }
 
         .toggle-switch {
@@ -97,7 +98,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #4a5568;
+            background-color: #4A4A4A;
             transition: 0.3s;
             border-radius: 20px;
         }
@@ -115,7 +116,7 @@
         }
 
         input:checked + .slider {
-            background-color: #0a84ff;
+            background-color: #F15A29;
         }
 
         input:checked + .slider:before {
@@ -137,7 +138,7 @@
         }
 
         .chat-container::-webkit-scrollbar-thumb {
-            background: #0a84ff;
+            background: #F15A29;
             border-radius: 3px;
         }
 
@@ -167,9 +168,11 @@
 
         .dual-response-header {
             text-align: center;
-            font-size: clamp(14px, 2.2vw, 16px);
+            font-size: clamp(15px, 2.4vw, 17px);
             color: #e5e7eb;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
         }
 
         .dual-response-wrapper {
@@ -181,15 +184,16 @@
 
         .dual-response {
             flex: 1;
-            background: #805ad5;
+            background: #4A4A4A;
             color: #e5e7eb;
-            padding: clamp(8px, 2vw, 12px);
-            border-radius: 8px;
+            padding: clamp(12px, 2.4vw, 16px);
+            border-radius: 16px;
             position: relative;
             min-width: 0;
             display: flex;
             flex-direction: column;
             min-height: 150px;
+            letter-spacing: -0.01em;
         }
 
         .dual-response .message-text {
@@ -203,34 +207,37 @@
         }
 
         .dual-response.selected {
-            border: 2px solid #0a84ff;
+            border: 2px solid #F15A29;
+            border-radius: 16px;
         }
 
         .message-bubble {
             max-width: 75%;
-            padding: clamp(8px, 2vw, 12px) clamp(10px, 2.5vw, 16px);
-            border-radius: 12px;
+            padding: clamp(10px, 2.2vw, 14px) clamp(12px, 2.7vw, 18px);
+            border-radius: 16px;
             line-height: 1.5;
-            font-size: clamp(13px, 2.2vw, 15px);
+            font-size: clamp(14px, 2.2vw, 16px);
             position: relative;
+            letter-spacing: -0.01em;
         }
 
         .user-message .message-bubble {
-            background: #0a84ff;
+            background: #F15A29;
             color: #fff;
-            border-bottom-right-radius: 2px;
+            border-bottom-right-radius: 4px;
         }
 
         .bot-message .message-bubble {
-            background: #805ad5;
+            background: #4A4A4A;
             color: #e5e7eb;
-            border-bottom-left-radius: 2px;
+            border-bottom-left-radius: 4px;
         }
 
         .timestamp {
-            font-size: clamp(10px, 1.5vw, 12px);
+            font-size: clamp(11px, 1.8vw, 13px);
             color: #a0aec0;
             margin-top: 4px;
+            letter-spacing: -0.01em;
         }
 
         .avatar {
@@ -238,17 +245,19 @@
             height: clamp(24px, 3.5vw, 28px);
             border-radius: 50%;
             margin: 0 clamp(5px, 1.5vw, 8px);
+            object-fit: cover;
         }
 
         .error-message {
             color: #f56565;
-            font-size: clamp(12px, 2vw, 14px);
+            font-size: clamp(13px, 2.2vw, 15px);
             text-align: center;
-            padding: 8px;
+            padding: 10px;
             animation: slideIn 0.3s ease;
+            font-weight: 500;
+            letter-spacing: -0.01em;
         }
 
-        /* Loader Animation */
         .loader {
             display: flex;
             justify-content: flex-start;
@@ -260,13 +269,12 @@
             content: '';
             width: 24px;
             height: 24px;
-            border: 3px solid #0a84ff;
+            border: 3px solid #F15A29;
             border-top-color: transparent;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
 
-        /* Typing Indicator */
         .typing-indicator {
             display: flex;
             justify-content: flex-start;
@@ -277,7 +285,7 @@
         .typing-indicator span {
             width: 8px;
             height: 8px;
-            background: #805ad5;
+            background: #4A4A4A;
             border-radius: 50%;
             margin: 0 4px;
             animation: bounce 0.6s infinite alternate;
@@ -292,31 +300,32 @@
         }
 
         .prefer-button {
-            background: #0a84ff;
+            background: #F15A29;
             color: #fff;
-            padding: 8px 12px;
+            padding: 10px 16px;
             border: none;
-            border-radius: 8px;
+            border-radius: 16px;
             cursor: pointer;
-            font-size: clamp(12px, 2vw, 14px);
+            font-size: clamp(13px, 2.2vw, 15px);
+            font-weight: 500;
             transition: all 0.2s ease;
+            letter-spacing: -0.01em;
         }
 
         .prefer-button:hover {
-            background: #805ad5;
+            background: #4A4A4A;
             transform: scale(1.05);
         }
 
         .prefer-button:disabled {
-            background: #4a5568;
+            background: #4A4A4A;
             cursor: not-allowed;
         }
 
-        /* Input Bar Component */
         .input-container {
             background: #1e1e1e;
             padding: clamp(10px, 2vw, 15px);
-            border-top: 2px solid #0a84ff;
+            border-top: 2px solid #F15A29;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -328,43 +337,46 @@
         .input-textarea {
             flex: 1;
             background: #2d2d2d;
-            border: 1px solid #0a84ff;
-            border-radius: 12px;
-            padding: clamp(8px, 2vw, 12px) clamp(10px, 2.5vw, 16px);
+            border: 1px solid #F15A29;
+            border-radius: 16px;
+            padding: clamp(10px, 2.2vw, 14px) clamp(12px, 2.7vw, 18px);
             color: #e5e7eb;
-            font-size: clamp(13px, 2.2vw, 16px);
+            font-size: clamp(14px, 2.2vw, 16px);
             resize: none;
             height: 60px;
             outline: none;
             transition: all 0.2s ease;
+            letter-spacing: -0.01em;
         }
 
         .input-textarea:focus {
-            border-color: #805ad5;
-            box-shadow: 0 0 0 3px rgba(128, 90, 213, 0.3);
+            border-color: #4A4A4A;
+            box-shadow: 0 0 0 3px rgba(74, 74, 74, 0.3);
         }
 
         .input-textarea:hover {
             transform: scale(1.01);
-            border-color: #805ad5;
+            border-color: #4A4A4A;
         }
 
         .send-button, .mic-button {
-            background: #0a84ff;
+            background: #F15A29;
             color: #fff;
-            padding: clamp(8px, 2vw, 12px);
+            padding: clamp(10px, 2.2vw, 14px);
             border: none;
-            border-radius: 12px;
+            border-radius: 16px;
             cursor: pointer;
-            font-size: clamp(13px, 2vw, 15px);
+            font-size: clamp(14px, 2.2vw, 16px);
+            font-weight: 500;
             transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
+            letter-spacing: -0.01em;
         }
 
         .send-button:hover, .mic-button:hover {
-            background: #805ad5;
+            background: #4A4A4A;
             transform: scale(1.05);
         }
 
@@ -372,24 +384,24 @@
             background: #f56565;
         }
 
-        /* Footer Component */
         .footer {
             background: #1e1e1e;
             text-align: center;
-            padding: clamp(8px, 2vw, 12px);
+            padding: clamp(10px, 2.2vw, 14px);
             border-top: 1px solid #3c3c3c;
-            font-size: clamp(12px, 2vw, 14px);
+            font-size: clamp(13px, 2.2vw, 15px);
             color: #a0aec0;
+            letter-spacing: -0.01em;
         }
 
         .footer a {
-            color: #0a84ff;
+            color: #F15A29;
             text-decoration: none;
             transition: color 0.2s ease;
         }
 
         .footer a:hover {
-            color: #805ad5;
+            color: #4A4A4A;
         }
 
         @keyframes slideIn {
@@ -418,7 +430,6 @@
             }
         }
 
-        /* Responsive Adjustments */
         @media (max-width: 768px) {
             .container {
                 height: 100vh;
@@ -480,20 +491,45 @@
                 font-size: 17px;
             }
         }
+
+        .upload-container {
+            margin-left: 16px;
+        }
+
+        .upload-button {
+            background: #F15A29;
+            color: #fff;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .upload-button:hover {
+            background: #4A4A4A;
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <!-- Header Component -->
         <div class="header">
-            <div class="avatar">AI</div>
-            <h1>AI Chatbot with Voice and Dual Responses</h1>
+            <img src="/static/images/logo.png" alt="PG Glass Logo" class="logo" onerror="this.onerror=null; this.src='https://via.placeholder.com/50x50?text=Logo+Error';">
+            <h1>PG Glass Chatbot</h1>
             <div class="toggle-container">
                 <span class="toggle-label">Dual Response</span>
                 <label class="toggle-switch">
                     <input type="checkbox" id="dual-response-toggle" onchange="toggleDualResponse()">
                     <span class="slider"></span>
                 </label>
+            </div>
+            <div class="upload-container">
+                <input type="file" id="pdf-upload" accept=".pdf" style="display: none;" onchange="uploadPDF(this.files[0])">
+                <button class="upload-button" onclick="document.getElementById('pdf-upload').click()">Upload PDF</button>
             </div>
         </div>
 
@@ -505,7 +541,7 @@
         <!-- Input Bar Component -->
         <div class="input-container">
             <textarea class="input-textarea" id="user-input" placeholder="Type your message..."></textarea>
-            <button class="send-button" onclick="sendMessage()">Send</button>
+            <button class="send-button" onclick="enqueueMessage()">Send</button>
             <button class="mic-button" id="mic-button" onclick="toggleSpeechRecognition()">🎤 Speak</button>
         </div>
 
@@ -548,9 +584,39 @@
             localStorage.setItem('dualResponseEnabled', JSON.stringify(dualResponseEnabled));
         }
 
-        // Load chat history from local storage
-        const chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+        // Load and sanitize chat history from local storage
+        let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+        chatHistory = chatHistory.filter(msg => {
+            if (!msg.role || !msg.text) return false;
+            if (msg.type === 'dual') {
+                const selected = msg.responses.find(r => r.selected) || msg.responses[0];
+                return selected && selected.text;
+            }
+            return true;
+        }).map(msg => {
+            if (msg.type === 'dual') {
+                const selected = msg.responses.find(r => r.selected) || msg.responses[0];
+                return {
+                    role: 'assistant',
+                    text: selected.text,
+                    timestamp: msg.timestamp || new Date().toISOString(),
+                    isSpeech: msg.isSpeech || false
+                };
+            }
+            return {
+                role: msg.role || 'user',
+                text: msg.text,
+                timestamp: msg.timestamp || new Date().toISOString(),
+                isSpeech: msg.isSpeech || false
+            };
+        });
+        localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+
         const chatContainer = document.getElementById('chat-container');
+
+        // Query queue to manage sequential processing
+        let queryQueue = [];
+        let isProcessingQueue = false;
 
         // Render initial chat history
         chatHistory.forEach(renderMessage);
@@ -620,7 +686,7 @@
                     messageTextElement.textContent += text.charAt(index);
                     index++;
                     scrollToBottom();
-                    setTimeout(type, 30); // Adjust typing speed here
+                    setTimeout(type, 10);
                 } else if (callback) {
                     callback();
                 }
@@ -640,7 +706,7 @@
                     ${responses.map((response, index) => `
                         <div class="dual-response" id="response-${messageId}-${index}">
                             <span class="message-text"></span>
-                            <button class="prefer-button" onclick="selectResponse('${messageId}', ${index}, ${isSpeech}, ${callback ? '() => callback()' : 'null'})">Prefer this response</button>
+                            <button class="prefer-button" onclick="selectResponse('${messageId}', ${index}, ${isSpeech}, () => {${callback ? 'callback()' : ''}})">Prefer this response</button>
                         </div>
                     `).join('')}
                 </div>
@@ -664,8 +730,8 @@
                         setTimeout(type, 7);
                     } else {
                         completedResponses++;
-                        if (completedResponses === totalResponses && callback) {
-                            // Callback will be triggered via button click
+                        if (completedResponses === totalResponses && !callback) {
+                            processNextQuery();
                         }
                     }
                 }
@@ -680,13 +746,23 @@
             const responses = message.responses;
             responses.forEach((r, i) => r.selected = i === selectedIndex);
 
+            // Update chatHistory with the selected response as a single message
+            const selectedResponse = responses[selectedIndex];
+            const updatedMessage = {
+                role: 'assistant',
+                text: selectedResponse.text,
+                timestamp: message.timestamp,
+                isSpeech: message.isSpeech
+            };
+            const messageIndex = chatHistory.findIndex(msg => msg.id === messageId);
+            chatHistory[messageIndex] = updatedMessage;
             localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
 
             container.className = 'message bot-message';
             container.innerHTML = `
                 <img src="https://api.dicebear.com/9.x/identicon/svg?seed=bot" class="avatar" alt="Bot Avatar">
                 <div class="message-bubble">
-                    ${responses[selectedIndex].text}
+                    ${selectedResponse.text}
                     <div class="timestamp">${new Date(message.timestamp).toLocaleTimeString()}</div>
                 </div>
             `;
@@ -698,7 +774,17 @@
                     const response = await fetch("/generate_audio", {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ text: responses[selectedIndex].text })
+                        body: JSON.stringify({ 
+                            text: selectedResponse.text,
+                            history: chatHistory.slice(-5).map(msg => ({
+                                role: msg.role,
+                                text: msg.text,
+                                timestamp: msg.timestamp,
+                                isSpeech: msg.isSpeech
+                            })),
+                            is_speech: true,
+                            dual_response: false
+                        })
                     });
 
                     if (!response.ok) {
@@ -717,6 +803,7 @@
             }
 
             if (callback) callback();
+            processNextQuery();
         }
 
         // Display error message
@@ -732,7 +819,7 @@
         function displayLoader() {
             const div = document.createElement('div');
             div.className = 'loader';
-            div.id = 'loader';
+            div.id = `loader-${Date.now()}`;
             chatContainer.appendChild(div);
             scrollToBottom();
             return div;
@@ -742,7 +829,7 @@
         function displayTypingIndicator() {
             const div = document.createElement('div');
             div.className = 'typing-indicator';
-            div.id = 'typing-indicator';
+            div.id = `typing-indicator-${Date.now()}`;
             div.innerHTML = '<span></span><span></span><span></span>';
             chatContainer.appendChild(div);
             scrollToBottom();
@@ -750,55 +837,76 @@
         }
 
         // Remove loader or typing indicator
-        function removeElement(id) {
-            const element = document.getElementById(id);
-            if (element) {
-                element.remove();
+        function removeElement(element) {
+            if (element && element.parentNode) {
+                element.parentNode.removeChild(element);
             }
         }
 
-        // Send message to backend
-        async function sendMessage() {
+        // Enqueue a message to be processed
+        function enqueueMessage() {
             const input = document.getElementById('user-input');
             const text = input.value.trim();
             if (!text) return;
 
-            // Add user message to history
-            const userMessage = { role: 'user', text, timestamp: new Date().toISOString(), isSpeech: lastInputWasSpeech };
+            queryQueue.push({ text, isSpeech: lastInputWasSpeech });
+            input.value = ''; // Clear input immediately
+            processNextQuery();
+        }
+
+        // Process the next query in the queue
+        async function processNextQuery() {
+            if (isProcessingQueue || queryQueue.length === 0) return;
+
+            isProcessingQueue = true;
+            const { text, isSpeech } = queryQueue.shift();
+
+            // Add user message to history and display immediately
+            const userMessage = { 
+                role: 'user', 
+                text, 
+                timestamp: new Date().toISOString(), 
+                isSpeech 
+            };
             chatHistory.push(userMessage);
             localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
             renderMessage(userMessage);
 
-            // Clear input
-            input.value = '';
-
-            // Show loader
+            // Show loader to reserve space
             const loader = displayLoader();
 
             try {
+                // Sanitize history for sending
+                const sanitizedHistory = chatHistory.slice(-5).map(msg => ({
+                    role: msg.role,
+                    text: msg.text,
+                    timestamp: msg.timestamp || new Date().toISOString(),
+                    isSpeech: msg.isSpeech || false
+                }));
+
                 // Call backend chat endpoint
                 const response = await fetch("/chat", {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         text, 
-                        history: chatHistory.slice(-5), 
-                        is_speech: lastInputWasSpeech,
+                        history: sanitizedHistory, 
+                        is_speech: isSpeech,
                         dual_response: dualResponseEnabled
                     })
                 });
 
                 // Remove loader
-                removeElement('loader');
+                removeElement(loader);
 
                 // Show typing indicator
                 const typingIndicator = displayTypingIndicator();
 
                 // Simulate thinking delay
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(resolve => setTimeout(resolve, 100));
 
                 // Remove typing indicator
-                removeElement('typing-indicator');
+                removeElement(typingIndicator);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
@@ -816,36 +924,44 @@
                         id: messageId,
                         responses: data.responses.map(text => ({ text, selected: false })),
                         timestamp: new Date().toISOString(),
-                        isSpeech: lastInputWasSpeech
+                        isSpeech
                     };
                     chatHistory.push(botMessage);
                     localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
-                    streamDualResponses(data.responses, messageId, lastInputWasSpeech);
+                    streamDualResponses(data.responses, messageId, isSpeech, () => {
+                        isProcessingQueue = false;
+                        processNextQuery();
+                    });
                 } else {
                     // Handle single response
                     const botMessage = { 
                         role: 'assistant', 
                         text: data.responses[0], 
                         timestamp: new Date().toISOString(),
-                        isSpeech: lastInputWasSpeech
+                        isSpeech
                     };
                     chatHistory.push(botMessage);
                     localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
-                    typeMessage(botMessage);
-
-                    // Play audio only if present and if the input was speech
-                    if (data.audio && lastInputWasSpeech) {
-                        const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
-                        audio.play().catch(e => displayError('Audio playback failed: ' + e.message));
-                    }
+                    typeMessage(botMessage, () => {
+                        // Play audio only if present and if the input was speech
+                        if (data.audio && isSpeech) {
+                            const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
+                            audio.play().catch(e => displayError('Audio playback failed: ' + e.message));
+                        }
+                        isProcessingQueue = false;
+                        processNextQuery();
+                    });
                 }
             } catch (error) {
                 console.error('Fetch error details:', error);
-                removeElement('loader');
-                removeElement('typing-indicator');
-                displayError(`Error: ${error.message}. Ensure the backend is running on http://localhost:8000.`);
+                removeElement(loader);
+                removeElement(document.querySelector('.typing-indicator'));
+                displayError(`Error: ${error.message}. Ensure the backend is running on http://localhost:8001.`);
+                isProcessingQueue = false;
+                processNextQuery();
+            } finally {
+                lastInputWasSpeech = false; // Reset after processing
             }
-            lastInputWasSpeech = false; // Reset after sending
         }
 
         // Check microphone permission
@@ -894,7 +1010,7 @@
                 const text = event.results[0][0].transcript;
                 document.getElementById('user-input').value = text;
                 lastInputWasSpeech = true;
-                await sendMessage();
+                enqueueMessage();
             };
 
             recognition.onend = () => {
@@ -913,12 +1029,50 @@
         document.getElementById('user-input').addEventListener('keydown', (event) => {
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
-                sendMessage();
+                enqueueMessage();
             }
         });
 
         // Initial scroll to bottom
         scrollToBottom();
+
+        // Add PDF upload functionality
+        async function uploadPDF(file) {
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/upload-pdf', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status}`);
+                }
+                
+                const data = await response.json();
+                displayMessage('system', `Successfully processed ${file.name}`);
+            } catch (error) {
+                console.error('Upload error:', error);
+                displayError(`Error uploading PDF: ${error.message}`);
+            }
+        }
+
+        function displayMessage(role, text) {
+            const div = document.createElement('div');
+            div.className = `message ${role}-message`;
+            div.innerHTML = `
+                <div class="message-bubble">
+                    ${text}
+                    <div class="timestamp">${new Date().toLocaleTimeString()}</div>
+                </div>
+            `;
+            chatContainer.appendChild(div);
+            scrollToBottom();
+        }
     </script>
 </body>
 </html>
