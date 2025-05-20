@@ -21,29 +21,30 @@
             align-items: center;
             min-height: 100vh;
             color: #e5e7eb;
-            padding: clamp(5px, 2vw, 10px);
+            padding: clamp(20px, 4vw, 40px);
             letter-spacing: -0.01em;
         }
 
         .container {
             width: 100%;
             max-width: 900px;
-            height: 100vh;
+            height: 90vh;
             background: #252526;
-            border-radius: 16px;
+            border-radius: 24px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            margin: 20px 0;
         }
 
         /* Header Component */
         .header {
             background: #1e1e1e;
-            padding: clamp(8px, 2vw, 12px);
+            padding: clamp(16px, 3vw, 24px);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
             border-bottom: 2px solid #F15A29;
             position: sticky;
             top: 0;
@@ -51,14 +52,14 @@
         }
 
         .header .logo {
-            width: clamp(32px, 4vw, 40px);
+            width: clamp(50px, 6vw, 60px);
             height: auto;
-            border-radius: 8px;
+            border-radius: 12px;
             object-fit: cover;
         }
 
         .header h1 {
-            font-size: clamp(14px, 2vw, 18px);
+            font-size: clamp(18px, 2.5vw, 24px);
             font-weight: 600;
             color: #e5e7eb;
             letter-spacing: -0.02em;
@@ -186,14 +187,15 @@
             flex: 1;
             background: #4A4A4A;
             color: #e5e7eb;
-            padding: clamp(10px, 2vw, 14px);
-            border-radius: 12px;
+            padding: clamp(14px, 2.5vw, 18px);
+            border-radius: 16px;
             position: relative;
             min-width: 0;
             display: flex;
             flex-direction: column;
             min-height: 120px;
             letter-spacing: -0.01em;
+            box-shadow: 0 2px 8px rgba(74, 74, 74, 0.2);
         }
 
         .dual-response .message-text {
@@ -211,26 +213,33 @@
             border-radius: 12px;
         }
 
+        .dual-response:hover {
+            background: #4A4A4A;
+            box-shadow: 0 0 12px rgba(255, 107, 53, 0.9), 0 2px 6px rgba(255, 107, 53, 0.4);
+        }
+
         .message-bubble {
             max-width: 80%;
-            padding: clamp(8px, 1.8vw, 12px) clamp(10px, 2.2vw, 16px);
-            border-radius: 12px;
+            padding: clamp(12px, 2vw, 16px) clamp(14px, 2.5vw, 20px);
+            border-radius: 16px;
             line-height: 1.5;
-            font-size: clamp(13px, 1.8vw, 15px);
+            font-size: clamp(14px, 1.8vw, 16px);
             position: relative;
             letter-spacing: -0.01em;
         }
 
         .user-message .message-bubble {
-            background: #F15A29;
+            background: #FF6B35;
             color: #fff;
             border-bottom-right-radius: 4px;
+            box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
         }
 
         .bot-message .message-bubble {
             background: #4A4A4A;
             color: #e5e7eb;
             border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(74, 74, 74, 0.2);
         }
 
         .timestamp {
@@ -241,11 +250,18 @@
         }
 
         .avatar {
-            width: clamp(20px, 3vw, 24px);
-            height: clamp(20px, 3vw, 24px);
+            width: clamp(32px, 4vw, 40px);
+            height: clamp(32px, 4vw, 40px);
             border-radius: 50%;
-            margin: 0 clamp(4px, 1.2vw, 6px);
+            margin: 0 clamp(8px, 1.5vw, 12px);
             object-fit: cover;
+            border: 2px solid #FF6B35;
+            box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
+        }
+
+        .bot-avatar {
+            border-color: #4A4A4A;
+            box-shadow: 0 2px 8px rgba(74, 74, 74, 0.2);
         }
 
         .error-message {
@@ -300,22 +316,25 @@
         }
 
         .prefer-button {
-            background: #F15A29;
+            background: #FF6B35;
             color: #fff;
-            padding: 8px 14px;
+            padding: 10px 16px;
             border: none;
             border-radius: 12px;
             cursor: pointer;
-            font-size: clamp(12px, 1.8vw, 14px);
+            font-size: clamp(13px, 1.8vw, 15px);
             font-weight: 500;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
             letter-spacing: -0.01em;
             touch-action: manipulation;
+            width: auto;
+            height: auto;
+            box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
         }
 
         .prefer-button:hover {
-            background: #4A4A4A;
-            transform: scale(1.05);
+            background: #FF8B5E;
+            box-shadow: 0 0 12px rgba(255, 107, 53, 0.9), 0 2px 6px rgba(255, 107, 53, 0.4);
         }
 
         .prefer-button:disabled {
@@ -325,11 +344,11 @@
 
         .input-container {
             background: #1e1e1e;
-            padding: clamp(8px, 1.5vw, 12px);
-            border-top: 2px solid #F15A29;
+            padding: clamp(12px, 2vw, 16px);
+            border-top: 2px solid #FF6B35;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             position: sticky;
             bottom: 0;
             z-index: 10;
@@ -339,11 +358,11 @@
         .input-textarea {
             flex: 1;
             background: #2d2d2d;
-            border: 1px solid #F15A29;
-            border-radius: 12px;
-            padding: clamp(8px, 1.8vw, 12px) clamp(10px, 2.2vw, 16px);
+            border: 1px solid #FF6B35;
+            border-radius: 16px;
+            padding: clamp(10px, 2vw, 14px) clamp(12px, 2.5vw, 18px);
             color: #e5e7eb;
-            font-size: clamp(13px, 1.8vw, 15px);
+            font-size: clamp(14px, 1.8vw, 16px);
             resize: none;
             height: 50px;
             outline: none;
@@ -362,53 +381,70 @@
         }
 
         .send-button, .mic-button, .mute-button {
-            background: #F15A29;
+            background: #FF6B35;
             color: #fff;
-            padding: clamp(8px, 1.8vw, 12px);
+            padding: 10px;
             border: none;
             border-radius: 12px;
             cursor: pointer;
-            font-size: clamp(13px, 1.8vw, 15px);
+            font-size: clamp(14px, 1.8vw, 16px);
             font-weight: 500;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
             letter-spacing: -0.01em;
             touch-action: manipulation;
-            min-width: 40px;
+            width: 48px;
+            height: 48px;
+            box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
+        }
+
+        .send-button {
+            border-radius: 12px;
+            width: auto;
+            padding: 10px 20px;
+            height: 48px;
+            min-width: 44px;
         }
 
         .send-button:hover, .mic-button:hover, .mute-button:hover {
-            background: #4A4A4A;
+            background: #FF8B5E;
+            box-shadow: 0 0 50px rgba(255, 107, 53, 2.5), 0 0 25px rgba(255, 107, 53, 1.8);
         }
 
         .mic-button.recording {
-            background: #f56565;
+            background: #FF8B5E;
+            animation: glow 0.8s infinite alternate ease-in-out;
         }
 
         .mute-button.muted {
             background: #4A4A4A;
         }
 
+        @keyframes glow {
+            from { box-shadow: 0 0 10px rgba(255, 107, 53, 0.7); }
+            to { box-shadow: 0 0 40px rgba(255, 107, 53, 2); }
+        }
+
         .footer {
             background: #1e1e1e;
             text-align: center;
-            padding: clamp(8px, 1.8vw, 12px);
+            padding: clamp(12px, 2vw, 16px);
             border-top: 1px solid #3c3c3c;
-            font-size: clamp(12px, 1.8vw, 14px);
+            font-size: clamp(13px, 1.8vw, 15px);
             color: #a0aec0;
             letter-spacing: -0.01em;
         }
 
         .footer a {
-            color: #F15A29;
+            color: #FF6B35;
             text-decoration: none;
             transition: color 0.2s ease;
         }
 
         .footer a:hover {
-            color: #4A4A4A;
+            color: #FF8B5E;
         }
 
         @keyframes slideIn {
@@ -565,14 +601,60 @@
             .message-bubble, .dual-response {
                 font-size: 16px;
             }
+            
+            .dual-response .message-text { /* Increase font size specifically for dual response text */
+                font-size: clamp(15px, 2vw, 17px); /* Slightly larger font */
+            }
 
             .input-textarea {
                 font-size: 16px;
             }
         }
+
+        .dual-response-divider {
+            border-top: 1px solid rgba(255, 107, 53, 0.2); /* Subtle orange divider */
+            margin: 10px 0; /* Adjust spacing */
+            transition: border-color 0.3s ease;
+        }
+
+        .dual-response-wrapper:hover .dual-response-divider,
+        .dual-response:hover + .dual-response-divider,
+        .dual-response:hover ~ .dual-response-divider:not(.dual-response:hover ~ .dual-response-wrapper > .dual-response-divider) { /* More complex selector to highlight the divider on hover of either response block */
+            border-color: rgba(255, 107, 53, 0.8); /* More visible on hover */
+        }
+
+        .dual-response-description {
+            font-size: clamp(13px, 1.8vw, 15px);
+            font-weight: 600;
+            color: #F15A29; /* Orange color */
+            margin-bottom: 8px;
+        }
+        
+        .dual-response:hover .dual-response-description { /* Add glow/color change on hover */
+            color: #FF8B5E; /* Lighter orange on hover */
+            text-shadow: 0 0 8px rgba(255, 107, 53, 0.5); /* Subtle text shadow glow */
+        }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
+    <!-- MathJax for LaTeX rendering -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\(', '\)']],
+                displayMath: [['$$', '$$'], ['\[', '\]']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <div class="container">
         <!-- Header Component -->
         <div class="header">
@@ -595,9 +677,28 @@
         <!-- Input Bar Component -->
         <div class="input-container">
             <textarea class="input-textarea" id="user-input" placeholder="Type your message..."></textarea>
-            <button class="send-button" onclick="enqueueMessage()">Send</button>
-            <button class="mic-button" id="mic-button" onclick="toggleSpeechRecognition()">🎤 Speak</button>
-            <button class="mute-button" id="mute-button" onclick="toggleMute()">🔊 Mute</button>
+            <button class="send-button" onclick="enqueueMessage()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <button class="mic-button" id="mic-button" onclick="toggleSpeechRecognition()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 1C11.2044 1 10.4413 1.31607 9.87868 1.87868C9.31607 2.44129 9 3.20435 9 4V12C9 12.7956 9.31607 13.5587 9.87868 14.1213C10.4413 14.6839 11.2044 15 12 15C12.7956 15 13.5587 14.6839 14.1213 14.1213C14.6839 13.5587 15 12.7956 15 12V4C15 3.20435 14.6839 2.44129 14.1213 1.87868C13.5587 1.31607 12.7956 1 12 1Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M19 10V12C19 13.8565 18.2625 15.637 16.9497 16.9497C15.637 18.2625 13.8565 19 12 19C10.1435 19 8.36301 18.2625 7.05025 16.9497C5.7375 15.637 5 13.8565 5 12V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 19V23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 23H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <button class="mute-button" id="mute-button" onclick="toggleMute()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11 5L6 9H2V15H6L11 19V5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M19.07 4.93C20.9447 6.80528 21.9979 9.34836 21.9979 12C21.9979 14.6516 20.9447 17.1947 19.07 19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mute-slash"/>
+                    <path d="M15.54 8.46C16.4774 9.39764 17.004 10.6692 17.004 11.995C17.004 13.3208 16.4774 14.5924 15.54 15.53" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mute-slash"/>
+                    <line x1="2" y1="2" x2="22" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="mute-slash"/>
+                </svg>
+            </button>
         </div>
 
         <!-- Footer Component -->
@@ -651,8 +752,11 @@
 
         // Update mute button appearance
         function updateMuteButton() {
-            muteButton.textContent = isMuted ? '🔇 Unmute' : '🔊 Mute';
             muteButton.classList.toggle('muted', isMuted);
+            const muteSlashElements = muteButton.querySelectorAll('.mute-slash');
+            muteSlashElements.forEach(el => {
+                el.style.display = isMuted ? 'block' : 'none';
+            });
         }
 
         // Stop audio stream
@@ -772,15 +876,17 @@
                 const div = document.createElement('div');
                 div.className = `message ${message.role === 'assistant' ? 'bot' : message.role}-message`;
                 div.innerHTML = `
-                    ${message.role === 'assistant' ? '<img src="https://api.dicebear.com/9.x/identicon/svg?seed=bot" class="avatar" alt="Bot Avatar">' : ''}
+                    ${message.role === 'assistant' ? '<img src="https://ui-avatars.com/api/?name=Bot&background=5A5A5A&color=e5e7eb&size=40" class="avatar bot-avatar" alt="Bot Avatar">' : ''}
                     <div class="message-bubble">
-                        ${message.text}
+                        ${marked.parse(message.text)}
                         <div class="timestamp">${new Date(message.timestamp).toLocaleTimeString()}</div>
                     </div>
-                    ${message.role === 'user' ? '<img src="https://api.dicebear.com/9.x/identicon/svg?seed=user" class="avatar" alt="User Avatar">' : ''}
+                    ${message.role === 'user' ? '<img src="https://ui-avatars.com/api/?name=User&background=FF6200&color=fff&size=40" class="avatar" alt="User Avatar">' : ''}
                 `;
                 chatContainer.appendChild(div);
                 scrollToBottom();
+                // Typeset LaTeX in the new message
+                MathJax.typesetPromise([div]).catch((err) => console.error('MathJax typesetting failed:', err));
             }
         }
 
@@ -791,7 +897,7 @@
             div.id = `dual-${message.id}`;
             const selectedResponse = message.responses.find(r => r.selected) || message.responses[0];
             div.innerHTML = `
-                <img src="https://api.dicebear.com/9.x/identicon/svg?seed=bot" class="avatar" alt="Bot Avatar">
+                <img src="https://ui-avatars.com/api/?name=Bot&background=5A5A5A&color=e5e7eb&size=40" class="avatar bot-avatar" alt="Bot Avatar">
                 <div class="message-bubble">
                     ${selectedResponse.text}
                     <div class="timestamp">${new Date(message.timestamp).toLocaleTimeString()}</div>
@@ -799,6 +905,20 @@
             `;
             chatContainer.appendChild(div);
             scrollToBottom();
+            // Typeset LaTeX in the new dual response container
+            MathJax.typesetPromise([div]).catch((err) => console.error('MathJax typesetting failed:', err));
+
+            responses.forEach((response, index) => {
+                const messageTextElement = document.querySelector(`#response-${messageId}-${index} .message-text`);
+                // Extract description and clean text safely
+                const match = response.match(/^\d+\.\s*[^:]*:\s*(.*)/);
+                const cleanText = match ? match[1].trim() : response.trim();
+                
+                // Parse markdown and set innerHTML directly (no typing animation for dual responses)
+                messageTextElement.innerHTML = marked.parse(cleanText);
+                // Typeset LaTeX within this specific response bubble after setting content
+                MathJax.typesetPromise([messageTextElement]).catch((err) => console.error('MathJax typesetting failed for dual response bubble:', err));
+            });
         }
 
         // Render a message with typing animation
@@ -806,7 +926,7 @@
             const div = document.createElement('div');
             div.className = `message bot-message`;
             div.innerHTML = `
-                <img src="https://api.dicebear.com/9.x/identicon/svg?seed=bot" class="avatar" alt="Bot Avatar">
+                <img src="https://ui-avatars.com/api/?name=Bot&background=5A5A5A&color=e5e7eb&size=40" class="avatar bot-avatar" alt="Bot Avatar">
                 <div class="message-bubble">
                     <span class="message-text"></span>
                     <div class="timestamp">${new Date(message.timestamp).toLocaleTimeString()}</div>
@@ -826,6 +946,8 @@
                     scrollToBottom();
                     setTimeout(type, 30);
                 } else if (callback) {
+                    // Typeset LaTeX after typing animation is complete
+                    MathJax.typesetPromise([div]).catch((err) => console.error('MathJax typesetting failed:', err));
                     callback();
                 }
             }
@@ -841,39 +963,41 @@
             div.innerHTML = `
                 <div class="dual-response-header">Which response do you prefer?</div>
                 <div class="dual-response-wrapper">
-                    ${responses.map((response, index) => `
+                    ${responses.map((response, index) => {
+                        // Extract description and clean text
+                        const match = response.match(/^(\d+\.\s*[^:]*):\\s*(.*)/);
+                        let description = match ? match[1].trim() : `Response ${index + 1}`;
+                        const cleanText = match ? match[2].trim() : response.trim();
+                        
+                        // Clean up description: remove leading number, dot, space, and trailing colon/space
+                        description = description.replace(/^\\d+\\.\\s*/, '').replace(/\\s*:$/, '');
+
+                        const isSecondResponse = index === 1;
+                        const dividerHtml = isSecondResponse ? '<div class="dual-response-divider"></div>' : '';
+                        return `
+                            ${dividerHtml}
                         <div class="dual-response" id="response-${messageId}-${index}">
+                                <div class="dual-response-description">${description}</div>
                             <span class="message-text"></span>
-                            <button class="prefer-button" onclick="selectResponse('${messageId}', ${index}, ${isSpeech})">Prefer this response</button>
+                                <button class="prefer-button" onclick="selectResponse('${messageId}', ${index}, ${isSpeech})">Prefer this response</button>
                         </div>
-                    `).join('')}
+                        `;
+                    }).join('')}
                 </div>
             `;
             chatContainer.appendChild(div);
             scrollToBottom();
 
-            let completedResponses = 0;
-            const totalResponses = responses.length;
-
             responses.forEach((response, index) => {
                 const messageTextElement = document.querySelector(`#response-${messageId}-${index} .message-text`);
-                let textIndex = 0;
-                const text = response;
-
-                function type() {
-                    if (textIndex < text.length) {
-                        messageTextElement.textContent += text.charAt(textIndex);
-                        textIndex++;
-                        scrollToBottom();
-                        setTimeout(type, 7);
-                    } else {
-                        completedResponses++;
-                        if (completedResponses === totalResponses) {
-                            // Wait for user selection before proceeding
-                        }
-                    }
-                }
-                type();
+                // Extract description and clean text safely
+                const match = response.match(/^\d+\.\s*[^:]*:\s*(.*)/);
+                const cleanText = match ? match[1].trim() : response.trim();
+                
+                // Parse markdown and set innerHTML directly (no typing animation for dual responses)
+                messageTextElement.innerHTML = marked.parse(cleanText);
+                // Typeset LaTeX within this specific response bubble after setting content
+                MathJax.typesetPromise([messageTextElement]).catch((err) => console.error('MathJax typesetting failed for dual response bubble:', err));
             });
         }
 
@@ -882,34 +1006,52 @@
             const container = document.getElementById(`dual-${messageId}`);
             const message = chatHistory.find(msg => msg.id === messageId);
             const responses = message.responses;
-            responses.forEach((r, i) => r.selected = i === selectedIndex);
+
+            // Extract and clean the selected response text
+            const selectedRawText = responses[selectedIndex];
+            const match = selectedRawText.match(/^\d+\.\s*[^:]*:\s*(.*)/);
+            const selectedText = match ? match[1].trim() : selectedRawText.trim();
+            
+            // Mark as selected in the original structure (if needed for other logic)
+            responses.forEach((r, i) => {
+                if (i === selectedIndex) {
+                    // Re-add the cleaned text to the object for history storage
+                    message.responses[i] = selectedText; // Store cleaned text
+                    message.responses[i].selected = true;
+                } else {
+                    message.responses[i].selected = false;
+                }
+            });
 
             // Update chatHistory with the selected response as a single message
-            const selectedResponse = responses[selectedIndex];
+            // Find the newly updated selected response in the history message object
+            const selectedResponseInHistory = message.responses.find(r => r.selected);
+
             const updatedMessage = {
                 role: 'assistant',
-                text: selectedResponse.text,
+                text: selectedText, // Use the cleaned text for the final message display
                 timestamp: message.timestamp,
-                isSpeech: message.isSpeech
+                isSpeech: isSpeech
             };
             const messageIndex = chatHistory.findIndex(msg => msg.id === messageId);
-            chatHistory[messageIndex] = updatedMessage;
+            chatHistory[messageIndex] = updatedMessage; // Replace the dual message with the single selected message
             localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
 
             container.className = 'message bot-message';
             container.innerHTML = `
-                <img src="https://api.dicebear.com/9.x/identicon/svg?seed=bot" class="avatar" alt="Bot Avatar">
+                <img src="https://ui-avatars.com/api/?name=Bot&background=5A5A5A&color=e5e7eb&size=40" class="avatar bot-avatar" alt="Bot Avatar">
                 <div class="message-bubble">
-                    ${selectedResponse.text}
+                    ${marked.parse(selectedText)}
                     <div class="timestamp">${new Date(message.timestamp).toLocaleTimeString()}</div>
                 </div>
             `;
             scrollToBottom();
+            // Typeset LaTeX in the updated message container
+            MathJax.typesetPromise([container]).catch((err) => console.error('MathJax typesetting failed:', err));
 
             isProcessingQueue = false;
             processNextQuery();
         }
-
 
         function displayError(message) {
             console.error(message);
@@ -1002,8 +1144,8 @@
                 // Show typing indicator
                 const typingIndicator = displayTypingIndicator();
 
-                // Simulate thinking delay
-                await new Promise(resolve => setTimeout(resolve, 100));
+                // Simulate thinking delay (1 second)
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
                 // Remove typing indicator
                 removeElement(typingIndicator);
@@ -1022,7 +1164,7 @@
                         role: 'assistant',
                         type: 'dual',
                         id: messageId,
-                        responses: data.responses.map(text => ({ text, selected: false })),
+                        responses: data.responses,
                         timestamp: new Date().toISOString(),
                         isSpeech
                     };
@@ -1030,16 +1172,22 @@
                     localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
                     streamDualResponses(data.responses, messageId, isSpeech);
                 } else {
-                    // Handle single response
+                    // Handle single response with typing animation
                     const botMessage = { 
                         role: 'assistant', 
-                        text: data.responses[0], 
+                        text: data.responses[0],
                         timestamp: new Date().toISOString(),
                         isSpeech
                     };
                     chatHistory.push(botMessage);
                     localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+                    
+                    // Use typeMessage for streaming effect
                     typeMessage(botMessage, () => {
+                        // Stream audio after typing is complete if speech is enabled
+                        if (isSpeech && !isMuted) {
+                            streamAudio(data.responses[0], sanitizedHistory);
+                        }
                         isProcessingQueue = false;
                         processNextQuery();
                     });
@@ -1051,8 +1199,6 @@
                 displayError(`Error: ${error.message}. Ensure the backend is running on http://localhost:8001.`);
                 isProcessingQueue = false;
                 processNextQuery();
-            } finally {
-                lastInputWasSpeech = false; // Reset after processing
             }
         }
 
@@ -1086,7 +1232,6 @@
 
             isRecognizing = true;
             micButton.classList.add('recording');
-            micButton.textContent = '🎤 Stop';
 
             try {
                 recognition.start();
@@ -1094,7 +1239,6 @@
                 displayError('Failed to start speech recognition: ' + error.message);
                 isRecognizing = false;
                 micButton.classList.remove('recording');
-                micButton.textContent = '🎤 Speak';
                 return;
             }
 
@@ -1108,7 +1252,6 @@
             recognition.onend = () => {
                 isRecognizing = false;
                 micButton.classList.remove('recording');
-                micButton.textContent = '🎤 Speak';
             };
 
             recognition.onerror = (event) => {
