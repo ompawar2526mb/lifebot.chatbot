@@ -31,6 +31,8 @@ jobs:
       run: |
         mkdir -p DATA/raw_pdfs
         mkdir -p DATA/embeddings
+        touch DATA/raw_pdfs/.gitkeep
+        touch DATA/embeddings/.gitkeep
         
     - name: Process PDFs
       env:
@@ -42,8 +44,9 @@ jobs:
       run: |
         git config --local user.email "kunaldmohare@gmail.com"
         git config --local user.name "Mohare786-Kunal"
-        git add DATA/embeddings/
-        git commit -m "Update PDF embeddings" || echo "No changes to commit"
+        git add DATA/embeddings/ DATA/raw_pdfs/.gitkeep DATA/embeddings/.gitkeep
+        git commit -m "Update PDF embeddings and metadata" || echo "No changes to commit"
+        
     - name: Push changes
       uses: ad-m/github-push-action@master
       with:
