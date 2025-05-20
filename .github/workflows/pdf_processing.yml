@@ -42,9 +42,8 @@ jobs:
       run: |
         git config --local user.email "kunaldmohare@gmail.com"
         git config --local user.name "Mohare786-Kunal"
-        git add DATA/embeddings/ DATA/pdf_metadata.json
+        git add DATA/embeddings/
         git commit -m "Update PDF embeddings" || echo "No changes to commit"
-        
     - name: Push changes
       uses: ad-m/github-push-action@master
       with:
