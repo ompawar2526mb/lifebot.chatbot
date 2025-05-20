@@ -14,3 +14,4 @@ pydantic
 llama-index-llms-openai
 numpy
 tqdm
+nltk

@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 import hashlib
 import shutil
+from utils import preprocess_text, token_reduction_stats
 
 logging.basicConfig(
     level=logging.INFO,
@@ -217,11 +218,31 @@ class PDFProcessor:
         logger.info(f"Created {len(nodes)} chunks from the document")
         
         # Extract text chunks
-        chunks = [node.text for node in nodes]
+        original_chunks = [node.text for node in nodes]
         
-        # Generate embeddings using OpenAI
+        # Apply NLTK preprocessing to reduce token count
+        logger.info("Applying NLTK preprocessing to reduce token count...")
+        preprocessed_chunks = []
+        total_original_tokens = 0
+        total_processed_tokens = 0
+        
+        for chunk in original_chunks:
+            # Preprocess the text to reduce tokens
+            processed_chunk = preprocess_text(chunk)
+            preprocessed_chunks.append(processed_chunk)
+            
+            # Calculate token reduction statistics
+            stats = token_reduction_stats(chunk, processed_chunk)
+            total_original_tokens += stats["original_tokens"]
+            total_processed_tokens += stats["processed_tokens"]
+        
+        # Log token reduction statistics
+        reduction_percent = ((total_original_tokens - total_processed_tokens) / total_original_tokens) * 100 if total_original_tokens > 0 else 0
+        logger.info(f"Token reduction: {total_original_tokens} → {total_processed_tokens} tokens ({reduction_percent:.2f}% reduction)")
+        
+        # Generate embeddings using OpenAI with preprocessed chunks
         logger.info("Generating embeddings...")
-        embeddings = self._get_embeddings_batch(chunks)
+        embeddings = self._get_embeddings_batch(preprocessed_chunks)
         
         # Initialize or update FAISS index
         self._initialize_index(len(embeddings))
@@ -237,15 +258,16 @@ class PDFProcessor:
         # Store documents with metadata
         self.documents = [
             {
-                "text": chunk,
+                "text": processed_chunk,  # Store preprocessed text
                 "embedding": embedding,
                 "metadata": {
                     "source": str(raw_pdf_path),
                     "chunk_id": i,
-                    "chunk_size": len(chunk)
+                    "chunk_size": len(processed_chunk),
+                    "original_text": original_chunk  # Store original text for reference if needed
                 }
             }
-            for i, (chunk, embedding) in enumerate(zip(chunks, embeddings))
+            for i, (original_chunk, processed_chunk, embedding) in enumerate(zip(original_chunks, preprocessed_chunks, embeddings))
         ]
         
         # Save the data for this PDF
