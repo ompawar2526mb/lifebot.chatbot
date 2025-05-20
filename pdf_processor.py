@@ -13,7 +13,18 @@ import json
 from pathlib import Path
 import hashlib
 import shutil
-from utils import preprocess_text, token_reduction_stats
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+
+# Download required NLTK data
+try:
+    nltk.download('punkt', quiet=True)
+    nltk.download('stopwords', quiet=True)
+    nltk.download('wordnet', quiet=True)
+except Exception as e:
+    logging.error(f"Failed to download NLTK data: {str(e)}")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -51,6 +62,38 @@ class PDFProcessor:
         # Configure chunking
         self.chunk_size = 1000  # Characters per chunk
         self.chunk_overlap = 200  # Overlap between chunks
+        
+        # Initialize NLTK components
+        self.stop_words = set(stopwords.words('english'))
+        self.lemmatizer = WordNetLemmatizer()
+
+    def preprocess_text(self, text: str) -> str:
+        """
+        Preprocess text using NLTK to remove low-weighted words while preserving semantic meaning.
+        
+        Args:
+            text: Input text (document chunk or query)
+            
+        Returns:
+            str: Preprocessed text with high-weighted words
+        """
+        try:
+            # Tokenize the text
+            tokens = word_tokenize(text.lower())
+            
+            # Remove stop words and non-alphabetic tokens, apply lemmatization
+            filtered_tokens = [
+                self.lemmatizer.lemmatize(token)
+                for token in tokens
+                if token.isalpha() and token not in self.stop_words
+            ]
+            
+            # Reconstruct the text
+            processed_text = " ".join(filtered_tokens)
+            return processed_text if processed_text else text  # Fallback to original if empty
+        except Exception as e:
+            logger.error(f"Error preprocessing text: {str(e)}")
+            return text  # Fallback to original text on error
     
     def process_pdfs(self) -> None:
         """Process all PDFs in the raw_pdfs directory."""
@@ -228,13 +271,14 @@ class PDFProcessor:
         
         for chunk in original_chunks:
             # Preprocess the text to reduce tokens
-            processed_chunk = preprocess_text(chunk)
+            processed_chunk = self.preprocess_text(chunk)
             preprocessed_chunks.append(processed_chunk)
             
-            # Calculate token reduction statistics
-            stats = token_reduction_stats(chunk, processed_chunk)
-            total_original_tokens += stats["original_tokens"]
-            total_processed_tokens += stats["processed_tokens"]
+            # Calculate token reduction statistics (simple token count)
+            original_tokens = len(word_tokenize(chunk))
+            processed_tokens = len(word_tokenize(processed_chunk))
+            total_original_tokens += original_tokens
+            total_processed_tokens += processed_tokens
         
         # Log token reduction statistics
         reduction_percent = ((total_original_tokens - total_processed_tokens) / total_original_tokens) * 100 if total_original_tokens > 0 else 0
@@ -273,7 +317,7 @@ class PDFProcessor:
         # Save the data for this PDF
         self._save_pdf_data(raw_pdf_path, self.index, self.documents)
         
-        logger.info(f"Successfully processed {len(chunks)} chunks from {pdf_path}")
+        logger.info(f"Successfully processed {len(preprocessed_chunks)} chunks from {pdf_path}")
         return self.documents
     
     def search(self, query: str, k: int = 5) -> List[Dict]:
@@ -289,9 +333,20 @@ class PDFProcessor:
         """
         if not self.documents:
             return []
-            
-        # Generate query embedding using OpenAI
-        query_embedding = self._get_embedding(query)
+        
+        # Note: Query is already preprocessed in rag.py, but we log the effect for consistency
+        logger.info("Query received (already preprocessed in RAGSystem): applying minimal preprocessing for logging...")
+        original_query = query
+        processed_query = self.preprocess_text(query)
+        
+        # Log token reduction for the query (for informational purposes)
+        original_tokens = len(word_tokenize(original_query))
+        processed_tokens = len(word_tokenize(processed_query))
+        reduction_percent = ((original_tokens - processed_tokens) / original_tokens) * 100 if original_tokens > 0 else 0
+        logger.info(f"Query token reduction (informational): {original_tokens} → {processed_tokens} tokens ({reduction_percent:.2f}% reduction)")
+        
+        # Generate query embedding using OpenAI with the preprocessed query
+        query_embedding = self._get_embedding(query)  # Use the already preprocessed query from rag.py
         
         # Search in FAISS index
         distances, indices = self.index.search(

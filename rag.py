@@ -5,6 +5,18 @@ from pdf_processor import PDFProcessor
 from llm import LLMHandler
 from pathlib import Path
 from collections import deque
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+
+# Download required NLTK data
+try:
+    nltk.download('punkt', quiet=True)
+    nltk.download('stopwords', quiet=True)
+    nltk.download('wordnet', quiet=True)
+except Exception as e:
+    logging.error(f"Failed to download NLTK data: {str(e)}")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -35,7 +47,43 @@ class RAGSystem:
         self.documents_processed = False
         self.memory_size = memory_size
         self.conversation_memory = deque(maxlen=memory_size)
+        # Initialize NLTK components
+        self.stop_words = set(stopwords.words('english'))
+        self.lemmatizer = WordNetLemmatizer()
         logger.info(f"RAG system initialized successfully with memory size {memory_size}")
+    
+    def preprocess_query(self, query: str) -> str:
+        """
+        Preprocess the query using NLTK to remove low-weighted words while preserving semantic meaning.
+        
+        Args:
+            query: User query
+            
+        Returns:
+            str: Preprocessed query with high-weighted words
+        """
+        try:
+            # Tokenize the query
+            tokens = word_tokenize(query.lower())
+            
+            # Remove stop words and non-alphabetic tokens, apply lemmatization
+            filtered_tokens = [
+                self.lemmatizer.lemmatize(token)
+                for token in tokens
+                if token.isalpha() and token not in self.stop_words
+            ]
+            
+            # Reconstruct the query
+            processed_query = " ".join(filtered_tokens)
+            logger.debug(f"Original query: {query}")
+            logger.debug(f"Original query tokens: {len(word_tokenize(query.lower()))}")
+            logger.debug(f"Processed query: {processed_query}")
+            logger.debug(f"Processed query tokens: {len(filtered_tokens)}")
+            logger.info(f"Tokens saved: {len(word_tokenize(query.lower())) - len(filtered_tokens)}")
+            return processed_query if processed_query else query  # Fallback to original if empty
+        except Exception as e:
+            logger.error(f"Error preprocessing query: {str(e)}")
+            return query  # Fallback to original query on error
     
     def add_to_memory(self, query: str, response: str) -> None:
         """
@@ -106,7 +154,7 @@ class RAGSystem:
     
     def query(self, query: str, k: int = 5) -> Optional[List[Dict]]:
         """
-        Query the RAG system.
+        Query the RAG system with a preprocessed query.
         
         Args:
             query: User query
@@ -124,8 +172,11 @@ class RAGSystem:
             return None
         
         try:
-            # Retrieve relevant context
-            context = self.pdf_processor.search(query, k=k)
+            # Preprocess the query using NLTK
+            processed_query = self.preprocess_query(query)
+            
+            # Retrieve relevant context using the processed query
+            context = self.pdf_processor.search(processed_query, k=k)
             
             if not context:
                 logger.info("No relevant context found for query")
@@ -150,18 +201,21 @@ class RAGSystem:
             Dict: Response containing text and optional audio
         """
         try:
+            # Preprocess the query before passing to LLM
+            processed_query = self.preprocess_query(query)
+            
             # Get conversation memory context
             memory_context = self.get_memory_context()
             
-            # Generate response with memory context
+            # Generate response with memory context using the processed query
             response = self.llm_handler.generate_response(
-                query, 
+                processed_query, 
                 context, 
                 dual_response=dual_response,
                 conversation_history=memory_context
             )
             
-            # Add to memory if response was successful
+            # Add to memory if response was successful (using original query for memory)
             if response and response["responses"]:
                 self.add_to_memory(query, response["responses"][0])
             
@@ -218,4 +272,4 @@ def main():
         raise
 
 if __name__ == "__main__":
-    main() 
+    main()
