@@ -75,11 +75,9 @@ class RAGSystem:
             
             # Reconstruct the query
             processed_query = " ".join(filtered_tokens)
+            logger.info(f"Tokens saved: {len(tokens) - len(filtered_tokens)}")
             logger.debug(f"Original query: {query}")
-            logger.debug(f"Original query tokens: {len(word_tokenize(query.lower()))}")
             logger.debug(f"Processed query: {processed_query}")
-            logger.debug(f"Processed query tokens: {len(filtered_tokens)}")
-            logger.info(f"Tokens saved: {len(word_tokenize(query.lower())) - len(filtered_tokens)}")
             return processed_query if processed_query else query  # Fallback to original if empty
         except Exception as e:
             logger.error(f"Error preprocessing query: {str(e)}")
@@ -173,10 +171,11 @@ class RAGSystem:
         
         try:
             # Preprocess the query using NLTK
+            original_query = query
             processed_query = self.preprocess_query(query)
             
             # Retrieve relevant context using the processed query
-            context = self.pdf_processor.search(processed_query, k=k)
+            context = self.pdf_processor.search(original_query, processed_query, k=k)
             
             if not context:
                 logger.info("No relevant context found for query")
@@ -201,7 +200,7 @@ class RAGSystem:
             Dict: Response containing text and optional audio
         """
         try:
-            # Preprocess the query before passing to LLM
+            # Preprocess the query (already done in query(), just for logging consistency)
             processed_query = self.preprocess_query(query)
             
             # Get conversation memory context

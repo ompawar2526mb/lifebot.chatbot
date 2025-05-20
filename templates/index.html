@@ -944,7 +944,7 @@
                     messageTextElement.textContent += text.charAt(index);
                     index++;
                     scrollToBottom();
-                    setTimeout(type, 30);
+                    setTimeout(type, 2);
                 } else if (callback) {
                     // Typeset LaTeX after typing animation is complete
                     MathJax.typesetPromise([div]).catch((err) => console.error('MathJax typesetting failed:', err));

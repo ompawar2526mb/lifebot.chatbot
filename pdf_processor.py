@@ -17,6 +17,8 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
+import unicodedata
+import re
 
 # Download required NLTK data
 try:
@@ -47,6 +49,7 @@ class PDFProcessor:
         self.data_dir = Path(data_dir)
         self.raw_pdfs_dir = self.data_dir / "raw_pdfs"
         self.embeddings_dir = self.data_dir / "embeddings"
+        self.metadata_file = self.data_dir / "pdf_metadata.json"
         
         # Create directories if they don't exist
         self.raw_pdfs_dir.mkdir(parents=True, exist_ok=True)
@@ -67,6 +70,31 @@ class PDFProcessor:
         self.stop_words = set(stopwords.words('english'))
         self.lemmatizer = WordNetLemmatizer()
 
+        # Load existing metadata
+        self.metadata = self._load_metadata()
+
+    def _load_metadata(self) -> Dict:
+        """Load existing metadata from pdf_metadata.json if it exists."""
+        if self.metadata_file.exists():
+            with open(self.metadata_file, 'r') as f:
+                return json.load(f)
+        return {}
+
+    def _save_metadata(self):
+        """Save metadata to pdf_metadata.json."""
+        with open(self.metadata_file, 'w') as f:
+            json.dump(self.metadata, f, indent=2)
+
+    def clean_text(self, text: str) -> str:
+        """Clean text by removing invalid characters and normalizing Unicode."""
+        # Normalize Unicode characters (e.g., convert smart quotes to regular quotes)
+        text = unicodedata.normalize('NFKC', text)
+        # Remove control characters and invalid Unicode
+        text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]', '', text)
+        # Replace multiple spaces with a single space
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text
+
     def preprocess_text(self, text: str) -> str:
         """
         Preprocess text using NLTK to remove low-weighted words while preserving semantic meaning.
@@ -75,9 +103,14 @@ class PDFProcessor:
             text: Input text (document chunk or query)
             
         Returns:
-            str: Preprocessed text with high-weighted words
+            str: Preprocessed text with high-weighted words, or empty string if invalid
         """
         try:
+            # Clean the text first
+            text = self.clean_text(text)
+            if not text:
+                return ""
+            
             # Tokenize the text
             tokens = word_tokenize(text.lower())
             
@@ -90,11 +123,11 @@ class PDFProcessor:
             
             # Reconstruct the text
             processed_text = " ".join(filtered_tokens)
-            return processed_text if processed_text else text  # Fallback to original if empty
+            return processed_text
         except Exception as e:
             logger.error(f"Error preprocessing text: {str(e)}")
-            return text  # Fallback to original text on error
-    
+            return ""
+
     def process_pdfs(self) -> None:
         """Process all PDFs in the raw_pdfs directory."""
         if not self.raw_pdfs_dir.exists():
@@ -117,8 +150,19 @@ class PDFProcessor:
             try:
                 self.process_pdf(str(pdf_path))
                 logger.info(f"Successfully processed {pdf_path.name}")
+                # Update metadata
+                self.metadata[pdf_path.name] = {
+                    "processed": True,
+                    "timestamp": str(Path(pdf_path).stat().st_mtime)
+                }
             except Exception as e:
                 logger.error(f"Error processing {pdf_path.name}: {str(e)}")
+                self.metadata[pdf_path.name] = {
+                    "processed": False,
+                    "error": str(e)
+                }
+            finally:
+                self._save_metadata()
     
     def _get_pdf_hash(self, pdf_path: str) -> str:
         """Generate a hash for the PDF file to use as a unique identifier."""
@@ -203,26 +247,66 @@ class PDFProcessor:
             self.index.nprobe = min(nlist // 10, 10)  # Number of clusters to search
     
     def _get_embedding(self, text: str) -> np.ndarray:
-        """Get embedding from OpenAI API."""
-        response = self.client.embeddings.create(
-            input=text,
-            model="text-embedding-ada-002"
-        )
-        return np.array(response.data[0].embedding)
-    
-    def _get_embeddings_batch(self, texts: List[str], batch_size: int = 32) -> np.ndarray:
-        """Get embeddings for a batch of texts."""
-        all_embeddings = []
-        for i in tqdm(range(0, len(texts), batch_size), desc="Generating embeddings"):
-            batch = texts[i:i + batch_size]
+        """Get embedding from OpenAI API for a single text."""
+        try:
             response = self.client.embeddings.create(
-                input=batch,
+                input=text,
                 model="text-embedding-ada-002"
             )
-            batch_embeddings = [data.embedding for data in response.data]
-            all_embeddings.extend(batch_embeddings)
-        return np.array(all_embeddings)
-    
+            return np.array(response.data[0].embedding)
+        except Exception as e:
+            logger.error(f"Error generating embedding for text: {str(e)}")
+            raise
+
+    def _get_embeddings_batch(self, texts: List[str], batch_size: int = 32) -> np.ndarray:
+        """Get embeddings for a batch of texts with error handling."""
+        all_embeddings = []
+        valid_texts = []
+        text_indices = []
+
+        # Filter out invalid texts
+        for i, text in enumerate(texts):
+            if text and isinstance(text, str) and len(text.strip()) > 0:
+                valid_texts.append(text)
+                text_indices.append(i)
+            else:
+                logger.warning(f"Skipping invalid or empty text at index {i}")
+
+        if not valid_texts:
+            logger.error("No valid texts to process for embeddings")
+            return np.array([])
+
+        # Process in batches
+        for i in tqdm(range(0, len(valid_texts), batch_size), desc="Generating embeddings"):
+            batch = valid_texts[i:i + batch_size]
+            batch_indices = text_indices[i:i + batch_size]
+            try:
+                response = self.client.embeddings.create(
+                    input=batch,
+                    model="text-embedding-ada-002"
+                )
+                batch_embeddings = [data.embedding for data in response.data]
+                all_embeddings.extend(zip(batch_indices, batch_embeddings))
+            except Exception as e:
+                logger.error(f"Batch failed: {str(e)}. Processing chunks individually...")
+                # Fallback to processing each chunk individually
+                for j, text in enumerate(batch):
+                    idx = batch_indices[j]
+                    try:
+                        response = self.client.embeddings.create(
+                            input=text,
+                            model="text-embedding-ada-002"
+                        )
+                        embedding = response.data[0].embedding
+                        all_embeddings.append((idx, embedding))
+                    except Exception as e2:
+                        logger.error(f"Failed to generate embedding for chunk at index {idx}: {str(e2)}")
+
+        # Sort embeddings by original indices
+        all_embeddings.sort(key=lambda x: x[0])
+        embeddings = [emb for _, emb in all_embeddings]
+        return np.array(embeddings) if embeddings else np.array([])
+
     def process_pdf(self, pdf_path: str) -> List[Dict]:
         """
         Process a PDF file and return its chunks with embeddings.
@@ -266,17 +350,20 @@ class PDFProcessor:
         # Apply NLTK preprocessing to reduce token count
         logger.info("Applying NLTK preprocessing to reduce token count...")
         preprocessed_chunks = []
+        original_indices = []
         total_original_tokens = 0
         total_processed_tokens = 0
         
-        for chunk in original_chunks:
+        for i, chunk in enumerate(original_chunks):
             # Preprocess the text to reduce tokens
             processed_chunk = self.preprocess_text(chunk)
-            preprocessed_chunks.append(processed_chunk)
+            if processed_chunk:  # Only include non-empty chunks
+                preprocessed_chunks.append(processed_chunk)
+                original_indices.append(i)
             
-            # Calculate token reduction statistics (simple token count)
+            # Calculate token reduction statistics
             original_tokens = len(word_tokenize(chunk))
-            processed_tokens = len(word_tokenize(processed_chunk))
+            processed_tokens = len(word_tokenize(processed_chunk)) if processed_chunk else 0
             total_original_tokens += original_tokens
             total_processed_tokens += processed_tokens
         
@@ -284,48 +371,72 @@ class PDFProcessor:
         reduction_percent = ((total_original_tokens - total_processed_tokens) / total_original_tokens) * 100 if total_original_tokens > 0 else 0
         logger.info(f"Token reduction: {total_original_tokens} → {total_processed_tokens} tokens ({reduction_percent:.2f}% reduction)")
         
+        if not preprocessed_chunks:
+            logger.error("No valid chunks after preprocessing")
+            return []
+        
         # Generate embeddings using OpenAI with preprocessed chunks
         logger.info("Generating embeddings...")
-        embeddings = self._get_embeddings_batch(preprocessed_chunks)
+        embeddings_array = self._get_embeddings_batch(preprocessed_chunks)
+        
+        if len(embeddings_array) == 0:
+            logger.error("Failed to generate any embeddings")
+            return []
+        
+        # Map embeddings back to original chunks
+        embeddings = []
+        embedding_idx = 0
+        for i in range(len(original_chunks)):
+            if i in original_indices and embedding_idx < len(embeddings_array):
+                embeddings.append(embeddings_array[embedding_idx])
+                embedding_idx += 1
+            else:
+                embeddings.append(None)
         
         # Initialize or update FAISS index
-        self._initialize_index(len(embeddings))
+        valid_embeddings = [emb for emb in embeddings if emb is not None]
+        if not valid_embeddings:
+            logger.error("No valid embeddings to add to FAISS index")
+            return []
+        
+        self._initialize_index(len(valid_embeddings))
         
         # Add to FAISS index
         if isinstance(self.index, faiss.IndexIVFFlat) and not self.index.is_trained:
             logger.info("Training FAISS index...")
-            self.index.train(embeddings)
+            self.index.train(np.array(valid_embeddings))
         
         logger.info("Adding vectors to FAISS index...")
-        self.index.add(embeddings)
+        self.index.add(np.array(valid_embeddings))
         
         # Store documents with metadata
         self.documents = [
             {
-                "text": processed_chunk,  # Store preprocessed text
-                "embedding": embedding,
+                "text": preprocessed_chunks[original_indices.index(i)],  # Store preprocessed text
+                "embedding": emb,
                 "metadata": {
                     "source": str(raw_pdf_path),
                     "chunk_id": i,
-                    "chunk_size": len(processed_chunk),
-                    "original_text": original_chunk  # Store original text for reference if needed
+                    "chunk_size": len(preprocessed_chunks[original_indices.index(i)]),
+                    "original_text": original_chunks[i]  # Store original text for reference
                 }
             }
-            for i, (original_chunk, processed_chunk, embedding) in enumerate(zip(original_chunks, preprocessed_chunks, embeddings))
+            for i, emb in enumerate(embeddings) if emb is not None
         ]
         
         # Save the data for this PDF
         self._save_pdf_data(raw_pdf_path, self.index, self.documents)
         
-        logger.info(f"Successfully processed {len(preprocessed_chunks)} chunks from {pdf_path}")
+        logger.info(f"Successfully processed {len(self.documents)} chunks from {pdf_path}")
         return self.documents
     
-    def search(self, query: str, k: int = 5) -> List[Dict]:
+    def search(self, original_query: str, processed_query: str, k: int = 5) -> List[Dict]:
         """
         Search for similar documents using FAISS.
         
         Args:
-            query: Search query
+            original_query: Original user query before preprocessing
+            processed_query: Preprocessed query (already processed in RAGSystem)
             k: Number of results to return
             
         Returns:
@@ -334,19 +445,14 @@ class PDFProcessor:
         if not self.documents:
             return []
         
-        # Note: Query is already preprocessed in rag.py, but we log the effect for consistency
-        logger.info("Query received (already preprocessed in RAGSystem): applying minimal preprocessing for logging...")
-        original_query = query
-        processed_query = self.preprocess_text(query)
-        
-        # Log token reduction for the query (for informational purposes)
+        # Log token reduction using the original and preprocessed query
         original_tokens = len(word_tokenize(original_query))
         processed_tokens = len(word_tokenize(processed_query))
         reduction_percent = ((original_tokens - processed_tokens) / original_tokens) * 100 if original_tokens > 0 else 0
-        logger.info(f"Query token reduction (informational): {original_tokens} → {processed_tokens} tokens ({reduction_percent:.2f}% reduction)")
+        logger.info(f"Query token reduction: {original_tokens} → {processed_tokens} tokens ({reduction_percent:.2f}% reduction)")
         
         # Generate query embedding using OpenAI with the preprocessed query
-        query_embedding = self._get_embedding(query)  # Use the already preprocessed query from rag.py
+        query_embedding = self._get_embedding(processed_query)
         
         # Search in FAISS index
         distances, indices = self.index.search(
