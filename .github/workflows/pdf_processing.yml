@@ -42,14 +42,14 @@ jobs:
         
     - name: Commit processed files
       run: |
-        git config --local user.email "kunaldmohare@gmail.com"
-        git config --local user.name "Mohare786-Kunal"
+        git config --local user.email "ompawar2526@gmail.com"
+        git config --local user.name "ompawar2526mb"
         git add DATA/embeddings/ DATA/raw_pdfs/.gitkeep DATA/embeddings/.gitkeep
         git commit -m "Update PDF embeddings and metadata" || echo "No changes to commit"
         
     - name: Push changes
       uses: ad-m/github-push-action@master
       with:
-        github_token: ${{ secrets.GH_TOKEN }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
         branch: ${{ github.ref }}
         force: true 
