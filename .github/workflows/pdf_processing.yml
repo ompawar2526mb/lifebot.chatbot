@@ -40,11 +40,22 @@ jobs:
       run: |
         python -c "from pdf_processor import PDFProcessor; processor = PDFProcessor(); processor.process_pdfs()"
         
+    - name: Debug file state
+      run: |
+        echo "Listing files in DATA/embeddings:"
+        ls -R DATA/embeddings || echo "DATA/embeddings is empty or missing"
+        echo "Contents of DATA/pdf_metadata.json:"
+        cat DATA/pdf_metadata.json || echo "pdf_metadata.json is missing"
+        echo "Git status:"
+        git status
+        echo "Checking .gitignore:"
+        cat .gitignore || echo "No .gitignore file found"
+
     - name: Commit processed files
       run: |
         git config --local user.email "ompawar2526@gmail.com"
         git config --local user.name "ompawar2526mb"
-        git add DATA/embeddings/ DATA/raw_pdfs/.gitkeep DATA/embeddings/.gitkeep
+        git add DATA/embeddings/ DATA/raw_pdfs/.gitkeep DATA/embeddings/.gitkeep DATA/pdf_metadata.json
         git commit -m "Update PDF embeddings and metadata" || echo "No changes to commit"
         
     - name: Push changes
@@ -52,4 +63,4 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         branch: ${{ github.ref }}
-        force: true 
+        force: true
