@@ -4,9 +4,13 @@ on:
   push:
     paths:
       - 'DATA/raw_pdfs/**'
+      - 'pdf_processor.py'
+      - 'requirements.txt'
   pull_request:
     paths:
       - 'DATA/raw_pdfs/**'
+      - 'pdf_processor.py'
+      - 'requirements.txt'
   workflow_dispatch:  # Allow manual triggering
 
 jobs:
@@ -34,19 +38,46 @@ jobs:
         touch DATA/raw_pdfs/.gitkeep
         touch DATA/embeddings/.gitkeep
         
+    - name: Clean embeddings directory
+      run: |
+        # Remove all files in DATA/embeddings/ except .gitkeep to force reprocessing
+        find DATA/embeddings/ -type f ! -name '.gitkeep' -delete
+        find DATA/embeddings/ -type d -empty -delete
+        # Remove pdf_metadata.json to start fresh
+        rm -f DATA/pdf_metadata.json
+        echo "Cleaned DATA/embeddings/ and removed pdf_metadata.json"
+
+    - name: Debug initial state
+      run: |
+        echo "Listing files in DATA/ before processing:"
+        ls -R DATA/ || echo "DATA/ is empty or missing"
+        echo "Git status before processing:"
+        git status
+
     - name: Process PDFs
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       run: |
         python -c "from pdf_processor import PDFProcessor; processor = PDFProcessor(); processor.process_pdfs()"
         
+    - name: Check Processing Success
+      run: |
+        if [ ! -f DATA/pdf_metadata.json ]; then
+          echo "Error: pdf_metadata.json not found"
+          exit 1
+        fi
+        if ! grep -q '"processed": true' DATA/pdf_metadata.json; then
+          echo "Error: No PDFs were processed successfully"
+          exit 1
+        fi
+
     - name: Debug file state
       run: |
-        echo "Listing files in DATA/embeddings:"
-        ls -R DATA/embeddings || echo "DATA/embeddings is empty or missing"
+        echo "Listing files in DATA/ after processing:"
+        ls -R DATA/ || echo "DATA/ is empty or missing"
         echo "Contents of DATA/pdf_metadata.json:"
         cat DATA/pdf_metadata.json || echo "pdf_metadata.json is missing"
-        echo "Git status:"
+        echo "Git status before adding files:"
         git status
         echo "Checking .gitignore:"
         cat .gitignore || echo "No .gitignore file found"
@@ -55,12 +86,19 @@ jobs:
       run: |
         git config --local user.email "ompawar2526@gmail.com"
         git config --local user.name "ompawar2526mb"
-        git add DATA/embeddings/ DATA/raw_pdfs/.gitkeep DATA/embeddings/.gitkeep DATA/pdf_metadata.json
-        git commit -m "Update PDF embeddings and metadata" || echo "No changes to commit"
-        
+        git add DATA/
+        echo "Git status after adding files:"
+        git status
+        # Check if there are changes to commit
+        if git diff-index --quiet HEAD --; then
+          echo "No changes to commit after processing PDFs"
+          exit 1
+        fi
+        git commit -m "Update PDF embeddings and metadata"
+
     - name: Push changes
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        branch: ${{ github.ref }}
+        branch: ${{ github.ref_name }}
         force: true

@@ -17,3 +17,13 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
+
+# Data directory
+# Ignore everything in DATA/ by default
+DATA/*
+# But allow raw_pdfs/, embeddings/, and pdf_metadata.json
+!DATA/raw_pdfs/
+!DATA/embeddings/
+!DATA/pdf_metadata.json
+# Ensure all files in embeddings/ are tracked
+!DATA/embeddings/**/*
